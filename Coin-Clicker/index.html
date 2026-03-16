@@ -25,14 +25,330 @@
       --text:       #dde;
       --muted:      #666;
       --radius:     12px;
+      --click-btn-bg: radial-gradient(circle at 35% 35%, #ffe066, #f5a623);
+      --click-shadow-base: 0 8px 32px rgba(245,166,35,0.5);
+      --click-shadow-hover: 0 12px 40px rgba(245,166,35,0.8);
+      --click-shadow-press: 0 2px 10px rgba(245,166,35,0.25);
+      --click-shadow-bounce: 0 14px 48px rgba(245,166,35,0.9);
+      --runner-body: linear-gradient(180deg, #ffe4f2, #ffb2d4 72%);
+      --runner-head: linear-gradient(180deg, #ffe8f4, #ffc0dc 78%);
+      --runner-ear: linear-gradient(180deg, #ffeef7, #ffb7d7);
+      --runner-tail: radial-gradient(circle at 35% 35%, #fff8fd, #ffd3e8 72%);
+      --runner-leg: linear-gradient(180deg, #ffcae1, #ff9ac6);
+      --runner-foot: #fff4be;
+      --runner-cheek: rgba(255, 133, 177, 0.45);
+      --runner-filter: none;
+      --runner-face-x: -1;
+      --runner-jump-scale: 1;
     }
 
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: var(--dark);
+      background:
+        linear-gradient(180deg, #081120 0%, #16365d 38%, #0e233c 68%, #08131f 100%);
       color: var(--text);
       height: 100vh;
       overflow: hidden;
+      position: relative;
+    }
+
+    #scene-bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 70% 18%, rgba(255, 228, 151, 0.16), transparent 14%),
+        radial-gradient(circle at 25% 22%, rgba(120, 190, 255, 0.12), transparent 18%);
+    }
+
+    #scene-bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 24%, rgba(255,255,255,0.75) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 74% 12%, rgba(255,255,255,0.7) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 50% 18%, rgba(255,255,255,0.45) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 84% 28%, rgba(255,255,255,0.5) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 30% 10%, rgba(255,255,255,0.55) 0 1px, transparent 1.8px);
+      animation: starDrift 80s linear infinite;
+      opacity: 0.65;
+    }
+
+    #scene-bg::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 42%;
+      background: linear-gradient(180deg, transparent, rgba(4, 11, 19, 0.22) 24%, rgba(3, 10, 18, 0.74));
+    }
+
+    .scene-sun {
+      position: absolute;
+      top: 9%;
+      right: 12%;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 235, 173, 0.95) 0%, rgba(255, 196, 105, 0.85) 46%, rgba(255, 196, 105, 0.08) 72%, transparent 74%);
+      filter: blur(1px);
+      opacity: 0.95;
+    }
+
+    .scene-clouds,
+    .mountain-layer,
+    .ground-layer {
+      position: absolute;
+      left: -10%;
+      width: 120%;
+      background-repeat: repeat-x;
+      background-size: auto 100%;
+      will-change: background-position;
+    }
+
+    .scene-clouds {
+      top: 8%;
+      height: 24%;
+      opacity: 0.28;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 260' preserveAspectRatio='none'%3E%3Cg fill='%23ffffff'%3E%3Cellipse cx='160' cy='130' rx='110' ry='42'/%3E%3Cellipse cx='255' cy='108' rx='72' ry='34'/%3E%3Cellipse cx='338' cy='134' rx='84' ry='38'/%3E%3Cellipse cx='640' cy='118' rx='125' ry='48'/%3E%3Cellipse cx='752' cy='98' rx='82' ry='34'/%3E%3Cellipse cx='848' cy='126' rx='104' ry='40'/%3E%3Cellipse cx='1180' cy='140' rx='130' ry='46'/%3E%3Cellipse cx='1298' cy='116' rx='76' ry='32'/%3E%3Cellipse cx='1380' cy='142' rx='92' ry='36'/%3E%3C/g%3E%3C/svg%3E");
+      animation: cloudDrift 90s linear infinite;
+    }
+
+    .mountain-layer {
+      background-position: 0 100%;
+    }
+
+    .mountain-far {
+      bottom: 25%;
+      height: 30%;
+      opacity: 0.52;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 300' preserveAspectRatio='none'%3E%3Cpath fill='%2321426a' d='M0 300V172l122-78 88 56 126-82 132 104 128-76 110 66 116-94 122 86 118-62 144 80 110-68 184 68V300z'/%3E%3C/svg%3E");
+      animation: mountainDriftFar 80s linear infinite;
+    }
+
+    .mountain-mid {
+      bottom: 13%;
+      height: 38%;
+      opacity: 0.82;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 380' preserveAspectRatio='none'%3E%3Cpath fill='%23142d4f' d='M0 380V212l118-72 134 118 140-164 104 88 138-106 122 154 138-124 116 86 118-106 132 138 122-70 138 58V380z'/%3E%3C/svg%3E");
+      animation: mountainDriftMid 48s linear infinite;
+    }
+
+    .mountain-near {
+      bottom: 0;
+      height: 48%;
+      opacity: 1;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 460' preserveAspectRatio='none'%3E%3Cpath fill='%230a1a2f' d='M0 460V268l132-108 114 78 118-132 116 96 140-148 112 92 128-118 122 144 110-86 122 122 102-76 142 136 142-68V460z'/%3E%3Cpath fill='%230f223d' opacity='.62' d='M0 460V328l104-54 126 42 118-88 90 54 150-96 126 90 126-70 126 78 114-40 140 64 140-44V460z'/%3E%3C/svg%3E");
+      animation: mountainDriftNear 26s linear infinite;
+    }
+
+    .ground-layer {
+      left: 0;
+      width: 100%;
+      bottom: 0;
+      height: 19%;
+      background:
+        linear-gradient(180deg, rgba(18, 50, 77, 0.1), rgba(7, 18, 31, 0.9)),
+        repeating-linear-gradient(90deg, rgba(120, 182, 118, 0.12) 0 16px, rgba(84, 140, 86, 0.12) 16px 32px);
+      opacity: 0.88;
+    }
+
+    .ground-glow {
+      position: absolute;
+      left: 50%;
+      bottom: 10%;
+      width: min(70vw, 520px);
+      height: 120px;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(102, 232, 255, 0.16), transparent 68%);
+      filter: blur(12px);
+    }
+
+    #scene-runner {
+      position: absolute;
+      left: 0;
+      bottom: 11.8%;
+      width: 96px;
+      height: 86px;
+      z-index: 4;
+      pointer-events: none;
+      transform: translate3d(-140px, 0, 0);
+      will-change: transform;
+    }
+
+    .runner-shadow {
+      position: absolute;
+      left: 20px;
+      bottom: 6px;
+      width: 56px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(2, 7, 14, 0.46);
+      filter: blur(3px);
+      transform-origin: center;
+      transition: transform 140ms ease, opacity 140ms ease;
+    }
+
+    .runner-character {
+      position: absolute;
+      inset: 0;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.22));
+      transform-origin: 50% 100%;
+      animation: runner-bob 0.42s ease-in-out infinite alternate;
+    }
+
+    #scene-runner.lib-mode .runner-character {
+      display: none;
+    }
+
+    .runner-lib-wrap {
+      position: absolute;
+      left: 14px;
+      bottom: 10px;
+      width: 68px;
+      height: 68px;
+      display: grid;
+      place-items: center;
+      transform-origin: 50% 100%;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.22));
+      will-change: transform;
+    }
+
+    #runner-lib-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      filter: var(--runner-filter);
+      will-change: transform;
+      transform-origin: 50% 70%;
+      transform: scaleX(var(--runner-face-x)) scaleY(var(--runner-jump-scale));
+      pointer-events: none;
+    }
+
+    .runner-body {
+      position: absolute;
+      left: 18px;
+      bottom: 20px;
+      width: 42px;
+      height: 30px;
+      border-radius: 52% 48% 48% 44%;
+      background: var(--runner-body);
+      border: 2px solid rgba(255,255,255,0.34);
+    }
+
+    .runner-head {
+      position: absolute;
+      left: 48px;
+      bottom: 34px;
+      width: 26px;
+      height: 24px;
+      border-radius: 54% 52% 48% 46%;
+      background: var(--runner-head);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .runner-ear {
+      position: absolute;
+      bottom: 20px;
+      width: 10px;
+      height: 26px;
+      border-radius: 999px 999px 6px 6px;
+      background: var(--runner-ear);
+      border: 2px solid rgba(255,255,255,0.28);
+      transform-origin: bottom center;
+    }
+
+    .runner-ear.back {
+      left: 53px;
+      transform: rotate(-8deg);
+    }
+
+    .runner-ear.front {
+      left: 64px;
+      height: 28px;
+      transform: rotate(8deg);
+    }
+
+    .runner-ear::after {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 4px;
+      width: 4px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--runner-cheek);
+    }
+
+    .runner-tail {
+      position: absolute;
+      left: 10px;
+      bottom: 38px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--runner-tail);
+      border: 2px solid rgba(255,255,255,0.32);
+    }
+
+    .runner-eye {
+      position: absolute;
+      left: 16px;
+      top: 8px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #18324d;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
+    }
+
+    .runner-cheek {
+      position: absolute;
+      left: 15px;
+      top: 12px;
+      width: 7px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--runner-cheek);
+    }
+
+    .runner-legs {
+      position: absolute;
+      inset: 0;
+    }
+
+    .runner-leg {
+      position: absolute;
+      bottom: 14px;
+      width: 10px;
+      height: 20px;
+      border-radius: 999px;
+      background: var(--runner-leg);
+      transform-origin: top center;
+      animation: runner-leg-cycle 0.24s ease-in-out infinite alternate;
+    }
+
+    .runner-leg.back {
+      left: 28px;
+    }
+
+    .runner-leg.front {
+      left: 46px;
+      animation-delay: 0.12s;
+    }
+
+    .runner-leg::after {
+      content: "";
+      position: absolute;
+      left: -1px;
+      bottom: -1px;
+      width: 14px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--runner-foot);
     }
 
     /* ═══════════════════════════════════════════
@@ -99,6 +415,42 @@
       justify-content: center;
       padding: 60px 20px 20px;
       gap: 0;
+      z-index: 10;
+    }
+
+    @keyframes cloudDrift {
+      from { background-position: 0 0; }
+      to { background-position: -1600px 0; }
+    }
+
+    @keyframes mountainDriftFar {
+      from { background-position: 0 100%; }
+      to { background-position: -1600px 100%; }
+    }
+
+    @keyframes mountainDriftMid {
+      from { background-position: 0 100%; }
+      to { background-position: -1600px 100%; }
+    }
+
+    @keyframes mountainDriftNear {
+      from { background-position: 0 100%; }
+      to { background-position: -1600px 100%; }
+    }
+
+    @keyframes starDrift {
+      from { transform: translateX(0); }
+      to { transform: translateX(-220px); }
+    }
+
+    @keyframes runner-bob {
+      from { transform: translateY(0); }
+      to { transform: translateY(-2px); }
+    }
+
+    @keyframes runner-leg-cycle {
+      from { transform: rotate(18deg); }
+      to { transform: rotate(-22deg); }
     }
 
     #game-title {
@@ -174,8 +526,8 @@
       height: clamp(170px, 42vw, 240px);
       border-radius: 50%;
       border: none;
-      background: radial-gradient(circle at 35% 35%, #ffe066, #f5a623);
-      box-shadow: 0 8px 32px rgba(245,166,35,0.5);
+      background: var(--click-btn-bg);
+      box-shadow: var(--click-shadow-base);
       font-size: clamp(3.5rem, 9vw, 5.5rem);
       cursor: pointer;
       user-select: none;
@@ -186,15 +538,15 @@
       transition: box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    #click-btn:hover { box-shadow: 0 12px 40px rgba(245,166,35,0.8); }
+    #click-btn:hover { box-shadow: var(--click-shadow-hover); }
 
     /* JS-driven press state — squish down */
     #click-btn.pressing {
       animation: coinPress 0.1s cubic-bezier(0.4, 0, 0.6, 1) forwards !important;
     }
     @keyframes coinPress {
-      0%   { transform: scale(1);                      box-shadow: 0 8px 28px rgba(245,166,35,0.5); }
-      100% { transform: scale(0.84) scaleX(1.12);      box-shadow: 0 2px 10px rgba(245,166,35,0.25); }
+      0%   { transform: scale(1);                      box-shadow: var(--click-shadow-base); }
+      100% { transform: scale(0.84) scaleX(1.12);      box-shadow: var(--click-shadow-press); }
     }
 
     /* JS-driven release state — spring bounce */
@@ -202,10 +554,10 @@
       animation: coinRelease 0.55s cubic-bezier(0.34, 1.62, 0.64, 1) forwards !important;
     }
     @keyframes coinRelease {
-      0%   { transform: scale(0.84) scaleX(1.12);      box-shadow: 0 2px 10px rgba(245,166,35,0.25); }
-      45%  { transform: scale(1.14) scaleX(0.95);      box-shadow: 0 14px 48px rgba(245,166,35,0.9); }
-      70%  { transform: scale(0.97);                   box-shadow: 0 8px 28px rgba(245,166,35,0.55); }
-      100% { transform: scale(1);                      box-shadow: 0 8px 28px rgba(245,166,35,0.5); }
+      0%   { transform: scale(0.84) scaleX(1.12);      box-shadow: var(--click-shadow-press); }
+      45%  { transform: scale(1.14) scaleX(0.95);      box-shadow: var(--click-shadow-bounce); }
+      70%  { transform: scale(0.97);                   box-shadow: var(--click-shadow-hover); }
+      100% { transform: scale(1);                      box-shadow: var(--click-shadow-base); }
     }
 
     /* Ripple ring */
@@ -224,8 +576,8 @@
     }
 
     @keyframes coinPulse {
-      0%,100% { box-shadow: 0 8px 28px rgba(245,166,35,0.5); }
-      50%      { box-shadow: 0 10px 44px rgba(245,166,35,0.85); }
+      0%,100% { box-shadow: var(--click-shadow-base); }
+      50%      { box-shadow: var(--click-shadow-hover); }
     }
 
     /* mascot */
@@ -534,7 +886,20 @@
     /* ═══════════════════════════════════════════
        BADGE COLLECTION
     ═══════════════════════════════════════════ */
+    .collection-section {
+      margin-bottom: 16px;
+    }
+    .collection-section:last-child { margin-bottom: 0; }
+    .collection-title {
+      font-size: 0.72rem;
+      color: var(--gold);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      padding-left: 2px;
+    }
     #frames-list { display: flex; flex-direction: column; gap: 8px; }
+    #icon-skins-list { display: flex; flex-direction: column; gap: 8px; }
     .frame-card {
       background: #0d1b36;
       border: 1px solid var(--navy-border);
@@ -571,6 +936,49 @@
     }
     .frame-equip-btn:hover { background: #1a5276; }
     .frame-equipped-tag { font-size: 0.72rem; color: var(--gold); font-weight: bold; white-space: nowrap; }
+
+    .icon-card {
+      background: linear-gradient(180deg, rgba(13,27,54,0.98), rgba(12,22,42,0.98));
+      border: 1px solid var(--navy-border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .icon-card.equipped { border-color: var(--gold); }
+    .icon-card.locked { opacity: 0.38; }
+    .icon-card:hover { border-color: #2e6da4; }
+    .icon-preview {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.4rem;
+      box-shadow: inset 0 2px 6px rgba(255,255,255,0.18), 0 6px 14px rgba(0,0,0,0.26);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .icon-info { flex: 1; min-width: 0; }
+    .icon-name { font-size: 0.84rem; color: #e0e0e0; font-weight: bold; }
+    .icon-unlock-hint { font-size: 0.69rem; color: var(--muted); margin-top: 2px; }
+    .icon-equip-btn {
+      background: var(--navy);
+      color: var(--gold);
+      border: 1px solid #1a5276;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .icon-equip-btn:hover { background: #1a5276; }
+    .icon-equipped-tag { font-size: 0.72rem; color: #ffb6d9; font-weight: bold; white-space: nowrap; }
 
     /* ═══════════════════════════════════════════
        MISSION COMPLETE MODAL
@@ -978,16 +1386,77 @@
     }
     #quick-upgrade-btn:disabled #qub-cost { color: var(--muted); }
     #qub-label {
-      font-size: 0.62rem;
-      color: var(--muted);
+      font-size: 0.8rem;
+      color: white;
       white-space: nowrap;
       flex-shrink: 0;
+      font-weight: 600;
     }
 
     /* ═══════════════════════════════════════════
        MOBILE
     ═══════════════════════════════════════════ */
     @media (max-width: 420px) {
+      #scene-runner {
+        width: 78px;
+        height: 70px;
+        bottom: 13.2%;
+      }
+
+      .runner-shadow {
+        left: 18px;
+        width: 42px;
+      }
+
+      .runner-lib-wrap {
+        left: 10px;
+        bottom: 8px;
+        width: 56px;
+        height: 56px;
+      }
+
+      .runner-body {
+        left: 15px;
+        bottom: 18px;
+        width: 34px;
+        height: 24px;
+      }
+
+      .runner-head {
+        left: 39px;
+        bottom: 29px;
+        width: 22px;
+        height: 20px;
+      }
+
+      .runner-ear.back { left: 44px; }
+      .runner-ear.front { left: 53px; }
+      .runner-tail {
+        left: 9px;
+        bottom: 31px;
+        width: 14px;
+        height: 14px;
+      }
+
+      .runner-leg.back { left: 23px; }
+      .runner-leg.front { left: 38px; }
+
+      .scene-sun {
+        width: 82px;
+        height: 82px;
+        top: 10%;
+        right: 8%;
+      }
+
+      .scene-clouds {
+        height: 18%;
+        opacity: 0.22;
+      }
+
+      .mountain-far { bottom: 28%; height: 24%; }
+      .mountain-mid { bottom: 14%; height: 32%; }
+      .mountain-near { height: 42%; }
+
       #game-title { font-size: 1.15rem; }
       #coin-display { font-size: 1.8rem; }
       .upgrade-info h3 { font-size: 0.86rem; }
@@ -995,9 +1464,51 @@
       #toast { white-space: normal; }
       .tab-btn { font-size: 0.62rem; padding: 6px 2px; }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      #scene-bg::before,
+      .scene-clouds,
+      .mountain-layer,
+      .runner-character,
+      .runner-leg,
+      .runner-lib-wrap,
+      #runner-lib-icon {
+        animation: none !important;
+      }
+    }
   </style>
 </head>
 <body>
+
+  <div id="scene-bg" aria-hidden="true">
+    <div class="scene-sun"></div>
+    <div class="scene-clouds"></div>
+    <div class="mountain-layer mountain-far"></div>
+    <div class="mountain-layer mountain-mid"></div>
+    <div class="mountain-layer mountain-near"></div>
+    <div id="scene-runner" aria-hidden="true">
+      <div class="runner-shadow"></div>
+      <div class="runner-lib-wrap">
+        <img id="runner-lib-icon" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f407.svg" alt="Bunny runner" draggable="false" />
+      </div>
+      <div class="runner-character">
+        <div class="runner-tail"></div>
+        <div class="runner-body"></div>
+        <div class="runner-head">
+          <div class="runner-eye"></div>
+          <div class="runner-cheek"></div>
+        </div>
+        <div class="runner-ear back"></div>
+        <div class="runner-ear front"></div>
+        <div class="runner-legs">
+          <div class="runner-leg back"></div>
+          <div class="runner-leg front"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ground-layer"></div>
+    <div class="ground-glow"></div>
+  </div>
 
   <a id="back-btn" href="../index.html">← Games</a>
 
@@ -1022,7 +1533,7 @@
     <!-- Quick Upgrade -->
     <div id="quick-upgrade-bar">
       <button id="quick-upgrade-btn" onclick="quickUpgrade()" disabled>
-        <span id="qub-label">⚡ Next:</span>
+        <span id="qub-label">⚡ Upgrade :</span>
         <span id="qub-name">No upgrade</span>
         <span id="qub-cost">🪙—</span>
       </button>
@@ -1153,7 +1664,18 @@
 
       <!-- COLLECTION -->
       <div class="tab-panel" id="tab-collection">
-        <div id="frames-list"></div>
+        <div class="collection-section">
+          <div class="collection-title">Frames</div>
+          <div id="frames-list"></div>
+        </div>
+        <div class="collection-section">
+          <div class="collection-title">Cute Icon Skins</div>
+          <div id="icon-skins-list"></div>
+        </div>
+        <div class="collection-section">
+          <div class="collection-title">Scene Buddy</div>
+          <div id="buddy-skins-list"></div>
+        </div>
       </div>
     </div><!-- /#menu-content -->
 
@@ -1211,6 +1733,7 @@
   <!-- Achievement / event toast -->
   <div id="toast"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script>
   /* ════════════════════════════════════════════════
      SECTION 1 — GAME STATE
@@ -1247,6 +1770,10 @@
       missionIndex:    0,
       unlockedFrames:  ['none'],
       equippedFrame:   'none',
+      unlockedIcons:   ['classic'],
+      equippedIcon:    'classic',
+      unlockedBuddies:['bunny'],
+      equippedBuddy:  'bunny',
       critCount:       0,
       comboMax:        0,
       ringsCompleted:  0,
@@ -1263,6 +1790,27 @@
     localStorage.setItem('coinClickerV2', JSON.stringify(state));
   }
 
+  function normalizeBuddySkinState() {
+    const buddyIdMap = {
+      'mint-fox': 'mint-bunny',
+      'cream-cat': 'cream-bunny',
+      'night-pup': 'twilight-bunny'
+    };
+
+    if (!Array.isArray(state.unlockedBuddies)) {
+      state.unlockedBuddies = ['bunny'];
+    } else {
+      state.unlockedBuddies = state.unlockedBuddies.map(function(id) {
+        return buddyIdMap[id] || id;
+      }).filter(function(id, index, array) {
+        return array.indexOf(id) === index;
+      });
+      if (!state.unlockedBuddies.length) state.unlockedBuddies = ['bunny'];
+    }
+
+    state.equippedBuddy = buddyIdMap[state.equippedBuddy] || state.equippedBuddy || 'bunny';
+  }
+
   function loadGame() {
     try {
       const saved = localStorage.getItem('coinClickerV2');
@@ -1272,6 +1820,12 @@
       for (let k = 1; k <= 5; k++) {
         if (!state.upgrades[k]) state.upgrades[k] = 0;
       }
+      if (!Array.isArray(state.unlockedFrames)) state.unlockedFrames = ['none'];
+      if (!Array.isArray(state.unlockedIcons)) state.unlockedIcons = ['classic'];
+      normalizeBuddySkinState();
+      if (!state.equippedFrame) state.equippedFrame = 'none';
+      if (!state.equippedIcon) state.equippedIcon = 'classic';
+      if (!state.equippedBuddy) state.equippedBuddy = 'bunny';
     } catch(e) { /* ignore corrupt data */ }
   }
 
@@ -1346,6 +1900,8 @@
     checkAchievements();
     checkMissions();
     checkFrameUnlocks();
+    checkIconUnlocks();
+    checkBuddyUnlocks();
     updateUI();
   }
 
@@ -1370,6 +1926,8 @@
     checkAchievements();
     checkMissions();
     checkFrameUnlocks();
+    checkIconUnlocks();
+    checkBuddyUnlocks();
     updateUI();
     saveGame();
   }
@@ -1386,7 +1944,7 @@
     var req    = prestigeRequirement();
     document.getElementById('prestige-modal-next-lv').textContent = nextLv;
     document.getElementById('prestige-modal-bonus').textContent   = bonus;
-    document.getElementById('prestige-modal-req').textContent     = formatNum(req);
+    document.getElementById('prestige-modal-req').textContent     = formatNum(req * 3);
     document.getElementById('prestige-modal').classList.add('show');
   }
 
@@ -1405,6 +1963,8 @@
     checkAchievements();
     checkMissions();
     checkFrameUnlocks();
+    checkIconUnlocks();
+    checkBuddyUnlocks();
     updateUI();
     saveGame();
     showToast('✨ Prestige ' + state.prestigeLevel + '! +' + (state.prestigeLevel * 10) + '% bonus active!');
@@ -1423,6 +1983,8 @@
     }
     checkMissions();
     checkFrameUnlocks();
+    checkIconUnlocks();
+    checkBuddyUnlocks();
     updateUI();
   }, 1000);
 
@@ -1507,6 +2069,9 @@
 
     hideGoldenCoin(false);
     showToast('🌟 Bonus! +' + reward + ' coins!');
+    checkFrameUnlocks();
+    checkIconUnlocks();
+    checkBuddyUnlocks();
     updateUI();
     saveGame();
   }
@@ -1581,6 +2146,8 @@
     renderMissions();
     // Cosmetics
     renderFramePanel();
+    renderIconPanel();
+    renderBuddyPanel();
     updateMascot();
     // Quick upgrade
     updateQuickUpgradeBtn();
@@ -1636,6 +2203,9 @@
     if (!confirm('Reset ALL progress including achievements and prestige?\nThis cannot be undone.')) return;
     localStorage.removeItem('coinClickerV2');
     state = defaultState();
+    applyFrame(state.equippedFrame);
+    applyIconSkin(state.equippedIcon);
+    applyRunnerBuddy(state.equippedBuddy);
     renderAchievements();
     updateUI();
   }
@@ -1694,6 +2264,9 @@
     pendingMissionClaim = false;
     document.getElementById('mission-modal').classList.remove('show');
     spawnFloat(window.innerWidth / 2, window.innerHeight / 3, '🎯 Mission done!', true);
+    checkFrameUnlocks();
+    checkIconUnlocks();
+    checkBuddyUnlocks();
     saveGame();
     updateUI();
   }
@@ -1741,6 +2314,154 @@
     { id: 'royal',  label: 'Royal Frame',  emoji: '🟣', color: '#9b59b6', hint: 'Reach Prestige level 1',              check: s => s.prestigeLevel >= 1 },
   ];
 
+  const ICON_SKINS_DEF = [
+    {
+      id: 'classic',
+      label: 'Classic Coin',
+      emoji: '🪙',
+      hint: 'Default icon — always equipped',
+      previewBg: 'radial-gradient(circle at 35% 35%, #ffe066, #f5a623)',
+      buttonBg: 'radial-gradient(circle at 35% 35%, #ffe066, #f5a623)',
+      shadowBase: '0 8px 32px rgba(245,166,35,0.5)',
+      shadowHover: '0 12px 40px rgba(245,166,35,0.8)',
+      shadowPress: '0 2px 10px rgba(245,166,35,0.25)',
+      shadowBounce: '0 14px 48px rgba(245,166,35,0.9)',
+      check: function() { return true; }
+    },
+    {
+      id: 'sakura',
+      label: 'Sakura Bloom',
+      emoji: '🌸',
+      hint: 'Reach 200 total clicks',
+      previewBg: 'radial-gradient(circle at 35% 35%, #ffe0f0, #ff94c2)',
+      buttonBg: 'radial-gradient(circle at 35% 35%, #ffe6f3, #ff9bc8)',
+      shadowBase: '0 8px 32px rgba(255,148,194,0.42)',
+      shadowHover: '0 12px 40px rgba(255,148,194,0.68)',
+      shadowPress: '0 2px 10px rgba(255,148,194,0.2)',
+      shadowBounce: '0 14px 48px rgba(255,148,194,0.82)',
+      check: function(s) { return s.totalClicks >= 200; }
+    },
+    {
+      id: 'berry',
+      label: 'Berry Pop',
+      emoji: '🍓',
+      hint: 'Earn 2,500 coins total',
+      previewBg: 'radial-gradient(circle at 35% 35%, #ffd4dd, #ff5b7e)',
+      buttonBg: 'radial-gradient(circle at 35% 35%, #ffd6df, #ff6284)',
+      shadowBase: '0 8px 32px rgba(255,91,126,0.42)',
+      shadowHover: '0 12px 40px rgba(255,91,126,0.72)',
+      shadowPress: '0 2px 10px rgba(255,91,126,0.22)',
+      shadowBounce: '0 14px 48px rgba(255,91,126,0.84)',
+      check: function(s) { return s.totalCoins >= 2500; }
+    },
+    {
+      id: 'ducky',
+      label: 'Sunny Chick',
+      emoji: '🐥',
+      hint: 'Reach 750 total clicks',
+      previewBg: 'radial-gradient(circle at 35% 35%, #fff5b1, #ffd44f)',
+      buttonBg: 'radial-gradient(circle at 35% 35%, #fff6bd, #ffd95a)',
+      shadowBase: '0 8px 32px rgba(255,212,79,0.42)',
+      shadowHover: '0 12px 40px rgba(255,212,79,0.75)',
+      shadowPress: '0 2px 10px rgba(255,212,79,0.22)',
+      shadowBounce: '0 14px 48px rgba(255,212,79,0.88)',
+      check: function(s) { return s.totalClicks >= 750; }
+    },
+    {
+      id: 'bunny',
+      label: 'Moon Bunny',
+      emoji: '🐰',
+      hint: 'Earn 15,000 coins total',
+      previewBg: 'radial-gradient(circle at 35% 35%, #f8efff, #c9a5ff)',
+      buttonBg: 'radial-gradient(circle at 35% 35%, #fbf4ff, #cfacff)',
+      shadowBase: '0 8px 32px rgba(201,165,255,0.42)',
+      shadowHover: '0 12px 40px rgba(201,165,255,0.74)',
+      shadowPress: '0 2px 10px rgba(201,165,255,0.2)',
+      shadowBounce: '0 14px 48px rgba(201,165,255,0.86)',
+      check: function(s) { return s.totalCoins >= 15000; }
+    },
+    {
+      id: 'starlight',
+      label: 'Starlight',
+      emoji: '⭐',
+      hint: 'Reach Prestige level 1',
+      previewBg: 'radial-gradient(circle at 35% 35%, #fff4c4, #7fb5ff)',
+      buttonBg: 'radial-gradient(circle at 35% 35%, #fff8cf, #8bc1ff)',
+      shadowBase: '0 8px 32px rgba(127,181,255,0.42)',
+      shadowHover: '0 12px 40px rgba(127,181,255,0.76)',
+      shadowPress: '0 2px 10px rgba(127,181,255,0.2)',
+      shadowBounce: '0 14px 48px rgba(127,181,255,0.88)',
+      check: function(s) { return s.prestigeLevel >= 1; }
+    }
+  ];
+
+  const BUDDY_SKINS_DEF = [
+    {
+      id: 'bunny',
+      label: 'Moon Bunny',
+      emoji: '🐰',
+      hint: 'Default buddy — always equipped',
+      previewBg: 'linear-gradient(135deg, #ffeef7, #ffc6de)',
+      runnerBody: 'linear-gradient(180deg, #ffe4f2, #ffb2d4 72%)',
+      runnerHead: 'linear-gradient(180deg, #ffe8f4, #ffc0dc 78%)',
+      runnerEar: 'linear-gradient(180deg, #ffeef7, #ffb7d7)',
+      runnerTail: 'radial-gradient(circle at 35% 35%, #fff8fd, #ffd3e8 72%)',
+      runnerLeg: 'linear-gradient(180deg, #ffcae1, #ff9ac6)',
+      runnerFoot: '#fff4be',
+      runnerCheek: 'rgba(255, 133, 177, 0.45)',
+      runnerFilter: 'none',
+      check: function() { return true; }
+    },
+    {
+      id: 'mint-bunny',
+      label: 'Mint Bunny',
+      emoji: '🐰',
+      hint: 'Reach 500 total clicks',
+      previewBg: 'linear-gradient(135deg, #d9fff2, #7ce3bf)',
+      runnerBody: 'linear-gradient(180deg, #d7fff1, #73d8b5 72%)',
+      runnerHead: 'linear-gradient(180deg, #e7fff7, #92ecc8 78%)',
+      runnerEar: 'linear-gradient(180deg, #e7fff7, #7edebc)',
+      runnerTail: 'radial-gradient(circle at 35% 35%, #f2fff9, #9de8cf 72%)',
+      runnerLeg: 'linear-gradient(180deg, #baf5df, #76d5b2)',
+      runnerFoot: '#fff1b8',
+      runnerCheek: 'rgba(255, 188, 122, 0.38)',
+      runnerFilter: 'hue-rotate(28deg) saturate(1.12) brightness(1.02)',
+      check: function(s) { return s.totalClicks >= 500; }
+    },
+    {
+      id: 'cream-bunny',
+      label: 'Cream Bunny',
+      emoji: '🐰',
+      hint: 'Earn 8,000 coins total',
+      previewBg: 'linear-gradient(135deg, #fff5d9, #ffd891)',
+      runnerBody: 'linear-gradient(180deg, #fff3d4, #ffd388 72%)',
+      runnerHead: 'linear-gradient(180deg, #fff8e4, #ffdfa2 78%)',
+      runnerEar: 'linear-gradient(180deg, #fff8e4, #ffc693)',
+      runnerTail: 'radial-gradient(circle at 35% 35%, #fffced, #ffe0a8 72%)',
+      runnerLeg: 'linear-gradient(180deg, #ffe4af, #ffc974)',
+      runnerFoot: '#fff2c8',
+      runnerCheek: 'rgba(255, 163, 120, 0.34)',
+      runnerFilter: 'hue-rotate(-20deg) saturate(1.2) brightness(1.04)',
+      check: function(s) { return s.totalCoins >= 8000; }
+    },
+    {
+      id: 'twilight-bunny',
+      label: 'Twilight Bunny',
+      emoji: '🐰',
+      hint: 'Reach Prestige level 1',
+      previewBg: 'linear-gradient(135deg, #dfe6ff, #9eadff)',
+      runnerBody: 'linear-gradient(180deg, #dfe5ff, #9eacff 72%)',
+      runnerHead: 'linear-gradient(180deg, #eef1ff, #bac5ff 78%)',
+      runnerEar: 'linear-gradient(180deg, #eff3ff, #93a3ff)',
+      runnerTail: 'radial-gradient(circle at 35% 35%, #fbfcff, #b8c5ff 72%)',
+      runnerLeg: 'linear-gradient(180deg, #c9d2ff, #91a0ff)',
+      runnerFoot: '#f7ebc5',
+      runnerCheek: 'rgba(255, 140, 166, 0.28)',
+      runnerFilter: 'hue-rotate(170deg) saturate(1.32) brightness(0.9)',
+      check: function(s) { return s.prestigeLevel >= 1; }
+    }
+  ];
+
   const MASCOT_STAGES = [
     { emoji: '🪨', name: 'Rookie Miner',   check: () => true },
     { emoji: '⛏️', name: 'Coin Digger',    check: s => s.totalClicks >= 100 },
@@ -1762,10 +2483,59 @@
     if (anyNew) renderFramePanel();
   }
 
+  function checkIconUnlocks() {
+    let anyNew = false;
+    ICON_SKINS_DEF.forEach(function(icon) {
+      if (!state.unlockedIcons.includes(icon.id) && icon.check(state)) {
+        state.unlockedIcons.push(icon.id);
+        anyNew = true;
+        if (icon.id !== 'classic') showToast('🧸 Icon skin unlocked: ' + icon.label + '!');
+      }
+    });
+    if (anyNew) renderIconPanel();
+  }
+
+  function checkBuddyUnlocks() {
+    let anyNew = false;
+    BUDDY_SKINS_DEF.forEach(function(buddy) {
+      if (!state.unlockedBuddies.includes(buddy.id) && buddy.check(state)) {
+        state.unlockedBuddies.push(buddy.id);
+        anyNew = true;
+        if (buddy.id !== 'bunny') showToast('🐾 Buddy unlocked: ' + buddy.label + '!');
+      }
+    });
+    if (anyNew) renderBuddyPanel();
+  }
+
   function applyFrame(id) {
     const ring = document.getElementById('coin-frame-ring');
     if (!ring) return;
     ring.className = id === 'none' ? '' : 'frame-' + id;
+  }
+
+  function applyIconSkin(id) {
+    const button = document.getElementById('click-btn');
+    const skin = ICON_SKINS_DEF.find(function(item) { return item.id === id; }) || ICON_SKINS_DEF[0];
+    if (!button) return;
+    button.textContent = skin.emoji;
+    button.title = 'Click with ' + skin.label + '!';
+    button.style.setProperty('--click-btn-bg', skin.buttonBg);
+    button.style.setProperty('--click-shadow-base', skin.shadowBase);
+    button.style.setProperty('--click-shadow-hover', skin.shadowHover);
+    button.style.setProperty('--click-shadow-press', skin.shadowPress);
+    button.style.setProperty('--click-shadow-bounce', skin.shadowBounce);
+  }
+
+  function applyRunnerBuddy(id) {
+    const buddy = BUDDY_SKINS_DEF.find(function(item) { return item.id === id; }) || BUDDY_SKINS_DEF[0];
+    document.documentElement.style.setProperty('--runner-body', buddy.runnerBody);
+    document.documentElement.style.setProperty('--runner-head', buddy.runnerHead);
+    document.documentElement.style.setProperty('--runner-ear', buddy.runnerEar);
+    document.documentElement.style.setProperty('--runner-tail', buddy.runnerTail);
+    document.documentElement.style.setProperty('--runner-leg', buddy.runnerLeg);
+    document.documentElement.style.setProperty('--runner-foot', buddy.runnerFoot);
+    document.documentElement.style.setProperty('--runner-cheek', buddy.runnerCheek);
+    document.documentElement.style.setProperty('--runner-filter', buddy.runnerFilter || 'none');
   }
 
   function equipFrame(id) {
@@ -1773,6 +2543,22 @@
     state.equippedFrame = id;
     applyFrame(id);
     renderFramePanel();
+    saveGame();
+  }
+
+  function equipIcon(id) {
+    if (!state.unlockedIcons.includes(id)) return;
+    state.equippedIcon = id;
+    applyIconSkin(id);
+    renderIconPanel();
+    saveGame();
+  }
+
+  function equipBuddy(id) {
+    if (!state.unlockedBuddies.includes(id)) return;
+    state.equippedBuddy = id;
+    applyRunnerBuddy(id);
+    renderBuddyPanel();
     saveGame();
   }
 
@@ -1795,6 +2581,54 @@
           ? (equipped
               ? '<span class="frame-equipped-tag">\u2713 On</span>'
               : '<button class="frame-equip-btn" onclick="equipFrame(\'' + f.id + '\')"  >Equip</button>')
+          : '');
+      list.appendChild(card);
+    });
+  }
+
+  function renderIconPanel() {
+    const list = document.getElementById('icon-skins-list');
+    if (!list) return;
+    list.innerHTML = '';
+    ICON_SKINS_DEF.forEach(function(icon) {
+      const unlocked = state.unlockedIcons.includes(icon.id);
+      const equipped = state.equippedIcon === icon.id;
+      const card = document.createElement('div');
+      card.className = 'icon-card' + (equipped ? ' equipped' : '') + (unlocked ? '' : ' locked');
+      card.innerHTML =
+        '<div class="icon-preview" style="background:' + icon.previewBg + '">' + icon.emoji + '</div>' +
+        '<div class="icon-info">' +
+          '<div class="icon-name">' + icon.label + '</div>' +
+          '<div class="icon-unlock-hint">' + (unlocked ? '\u2705 Unlocked' : '\uD83D\uDD12 ' + icon.hint) + '</div>' +
+        '</div>' +
+        (unlocked
+          ? (equipped
+              ? '<span class="icon-equipped-tag">\u2728 On</span>'
+              : '<button class="icon-equip-btn" onclick="equipIcon(\'' + icon.id + '\')">Equip</button>')
+          : '');
+      list.appendChild(card);
+    });
+  }
+
+  function renderBuddyPanel() {
+    const list = document.getElementById('buddy-skins-list');
+    if (!list) return;
+    list.innerHTML = '';
+    BUDDY_SKINS_DEF.forEach(function(buddy) {
+      const unlocked = state.unlockedBuddies.includes(buddy.id);
+      const equipped = state.equippedBuddy === buddy.id;
+      const card = document.createElement('div');
+      card.className = 'icon-card' + (equipped ? ' equipped' : '') + (unlocked ? '' : ' locked');
+      card.innerHTML =
+        '<div class="icon-preview" style="background:' + buddy.previewBg + '">' + buddy.emoji + '</div>' +
+        '<div class="icon-info">' +
+          '<div class="icon-name">' + buddy.label + '</div>' +
+          '<div class="icon-unlock-hint">' + (unlocked ? '\u2705 Unlocked' : '\uD83D\uDD12 ' + buddy.hint) + '</div>' +
+        '</div>' +
+        (unlocked
+          ? (equipped
+              ? '<span class="icon-equipped-tag">\u2728 On</span>'
+              : '<button class="icon-equip-btn" onclick="equipBuddy(\'' + buddy.id + '\')">Equip</button>')
           : '');
       list.appendChild(card);
     });
@@ -2044,6 +2878,132 @@
      SECTION 10 — EVENT LISTENERS & INIT
   ════════════════════════════════════════════════ */
   const btn = document.getElementById('click-btn');
+  const sceneRunner = document.getElementById('scene-runner');
+  const runnerShadow = sceneRunner ? sceneRunner.querySelector('.runner-shadow') : null;
+  const runnerLibWrap = sceneRunner ? sceneRunner.querySelector('.runner-lib-wrap') : null;
+  const runnerLibIcon = document.getElementById('runner-lib-icon');
+
+  const runnerState = {
+    x: -140,
+    y: 0,
+    speed: 92,
+    velocityY: 0,
+    jumping: false,
+    nextJumpAt: 0,
+    lastFrameAt: 0
+  };
+
+  let runnerLibIdleTween = null;
+
+  function initRunnerLibMotion() {
+    if (!sceneRunner || !runnerLibWrap || !runnerLibIcon) return;
+    sceneRunner.classList.add('lib-mode');
+
+    // Lock facing direction to the right and clear old transform side effects.
+    document.documentElement.style.setProperty('--runner-face-x', '-1');
+    document.documentElement.style.setProperty('--runner-jump-scale', '1');
+    if (window.gsap) window.gsap.set(runnerLibIcon, { clearProps: 'rotation,scale,skew,x,y' });
+
+    if (!window.gsap || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    if (runnerLibIdleTween) runnerLibIdleTween.kill();
+
+    runnerLibIdleTween = window.gsap.to(runnerLibWrap, {
+      y: -2,
+      duration: 0.28,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  function randomRunnerRange(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function scheduleRunnerJump(now) {
+    runnerState.nextJumpAt = now + randomRunnerRange(900, 2800);
+  }
+
+  function resetRunner(now) {
+    runnerState.x = -140 - Math.random() * 180;
+    runnerState.y = 0;
+    runnerState.velocityY = 0;
+    runnerState.jumping = false;
+    runnerState.speed = randomRunnerRange(88, 142);
+    scheduleRunnerJump(now || performance.now());
+  }
+
+  function updateRunnerVisual() {
+    if (!sceneRunner) return;
+    sceneRunner.style.transform = 'translate3d(' + runnerState.x + 'px, ' + (-runnerState.y) + 'px, 0)';
+
+    if (runnerLibIcon) {
+      var legScaleY = 1;
+
+      if (runnerState.jumping) {
+        if (runnerState.velocityY > 35) {
+          // Rising: legs stretch longer.
+          legScaleY = 1.13;
+        } else if (runnerState.velocityY < -35) {
+          // Falling: legs tuck/compress for landing.
+          legScaleY = 0.84;
+        } else {
+          // Apex transition.
+          legScaleY = 0.96;
+        }
+      }
+
+      document.documentElement.style.setProperty('--runner-jump-scale', legScaleY.toFixed(3));
+    }
+
+    if (runnerShadow) {
+      var shadowScale = runnerState.jumping ? Math.max(0.62, 1 - runnerState.y / 180) : 1;
+      runnerShadow.style.transform = 'scaleX(' + shadowScale + ')';
+      runnerShadow.style.opacity = runnerState.jumping ? '0.26' : '0.42';
+    }
+  }
+
+  function animateSceneRunner(now) {
+    if (!sceneRunner) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      updateRunnerVisual();
+      return;
+    }
+
+    if (!runnerState.lastFrameAt) runnerState.lastFrameAt = now;
+    var dt = Math.min(0.032, (now - runnerState.lastFrameAt) / 1000);
+    runnerState.lastFrameAt = now;
+
+    // Move forward only while in the air; grounded bunny stays in place.
+    if (runnerState.jumping) {
+      runnerState.x += runnerState.speed * dt;
+    }
+
+    if (!runnerState.jumping && now >= runnerState.nextJumpAt) {
+      runnerState.jumping = true;
+      runnerState.velocityY = randomRunnerRange(240, 320);
+      scheduleRunnerJump(now);
+    }
+
+    if (runnerState.jumping) {
+      runnerState.y += runnerState.velocityY * dt;
+      runnerState.velocityY -= 620 * dt;
+
+      if (runnerState.y <= 0) {
+        runnerState.y = 0;
+        runnerState.velocityY = 0;
+        runnerState.jumping = false;
+      }
+    }
+
+    if (runnerState.x > window.innerWidth + 140) {
+      resetRunner(now);
+    }
+
+    updateRunnerVisual();
+    window.requestAnimationFrame(animateSceneRunner);
+  }
 
   function spawnRipple() {
     var area = document.getElementById('coin-btn-area');
@@ -2104,12 +3064,26 @@
   // INIT
   loadGame();
   if (!Array.isArray(state.unlockedFrames)) state.unlockedFrames = ['none'];
+  if (!Array.isArray(state.unlockedIcons)) state.unlockedIcons = ['classic'];
+  normalizeBuddySkinState();
   if (!state.equippedFrame) state.equippedFrame = 'none';
+  if (!state.equippedIcon) state.equippedIcon = 'classic';
+  if (!state.equippedBuddy) state.equippedBuddy = 'bunny';
   checkFrameUnlocks();
+  checkIconUnlocks();
+  checkBuddyUnlocks();
   applyFrame(state.equippedFrame);
+  applyIconSkin(state.equippedIcon);
+  applyRunnerBuddy(state.equippedBuddy);
+  initRunnerLibMotion();
   renderAchievements();
   updateUI();
   scheduleGoldenCoin();
+  resetRunner(performance.now());
+  updateRunnerVisual();
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    window.requestAnimationFrame(animateSceneRunner);
+  }
   </script>
 </body>
 </html>
