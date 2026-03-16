@@ -174,14 +174,51 @@
       box-shadow: 0 8px 32px rgba(245,166,35,0.5);
       font-size: clamp(3.5rem, 9vw, 5.5rem);
       cursor: pointer;
-      transition: transform 0.08s, box-shadow 0.08s;
       user-select: none;
       position: relative;
       z-index: 2;
+      transform-origin: center center;
       animation: coinPulse 2.4s ease-in-out infinite;
+      transition: box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
     }
-    #click-btn:hover  { box-shadow: 0 12px 40px rgba(245,166,35,0.8); animation: none; transform: scale(1.04); }
-    #click-btn:active { transform: scale(0.91) !important; box-shadow: 0 3px 12px rgba(245,166,35,0.3); animation: none; }
+    #click-btn:hover { box-shadow: 0 12px 40px rgba(245,166,35,0.8); }
+
+    /* JS-driven press state — squish down */
+    #click-btn.pressing {
+      animation: coinPress 0.1s cubic-bezier(0.4, 0, 0.6, 1) forwards !important;
+    }
+    @keyframes coinPress {
+      0%   { transform: scale(1);                      box-shadow: 0 8px 28px rgba(245,166,35,0.5); }
+      100% { transform: scale(0.84) scaleX(1.12);      box-shadow: 0 2px 10px rgba(245,166,35,0.25); }
+    }
+
+    /* JS-driven release state — spring bounce */
+    #click-btn.releasing {
+      animation: coinRelease 0.55s cubic-bezier(0.34, 1.62, 0.64, 1) forwards !important;
+    }
+    @keyframes coinRelease {
+      0%   { transform: scale(0.84) scaleX(1.12);      box-shadow: 0 2px 10px rgba(245,166,35,0.25); }
+      45%  { transform: scale(1.14) scaleX(0.95);      box-shadow: 0 14px 48px rgba(245,166,35,0.9); }
+      70%  { transform: scale(0.97);                   box-shadow: 0 8px 28px rgba(245,166,35,0.55); }
+      100% { transform: scale(1);                      box-shadow: 0 8px 28px rgba(245,166,35,0.5); }
+    }
+
+    /* Ripple ring */
+    .coin-ripple {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 215, 0, 0.85);
+      pointer-events: none;
+      z-index: 5;
+      animation: coinRipple 0.55s ease-out forwards;
+    }
+    @keyframes coinRipple {
+      0%   { transform: scale(1);    opacity: 0.9; }
+      100% { transform: scale(1.65); opacity: 0; }
+    }
+
     @keyframes coinPulse {
       0%,100% { box-shadow: 0 8px 28px rgba(245,166,35,0.5); }
       50%      { box-shadow: 0 10px 44px rgba(245,166,35,0.85); }
@@ -527,18 +564,41 @@
     ═══════════════════════════════════════════ */
     .float-text {
       position: fixed;
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: var(--gold);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.65);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.9);
       pointer-events: none;
-      animation: floatUp 0.9s ease-out forwards;
+      animation: floatUp 0.85s ease-out forwards;
       z-index: 200;
       transform: translateX(-50%);
+      letter-spacing: 0.5px;
     }
-    .float-text.lucky { color: #ff6cf5; font-size: 1.3rem; }
+
+    /* CRITICAL / LUCKY */
+    .float-text.lucky {
+      font-size: 2.3rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow:
+        0 0 8px  #ffd700,
+        0 0 20px #ff9a00,
+        0 0 40px #ff6600aa,
+        0 2px 5px rgba(0,0,0,0.9);
+      letter-spacing: 1px;
+      animation: floatUpCrit 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
     @keyframes floatUp {
-      0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
-      100% { opacity: 0; transform: translateX(-50%) translateY(-70px); }
+      0%   { opacity: 1;   transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0;   transform: translateX(-50%) translateY(-56px); }
+    }
+
+    @keyframes floatUpCrit {
+      0%   { opacity: 1;   transform: translateX(-50%) translateY(0)    scale(0.6); }
+      15%  { opacity: 1;   transform: translateX(-50%) translateY(-10px) scale(1.25); }
+      40%  { opacity: 1;   transform: translateX(-50%) translateY(-26px) scale(1.05); }
+      100% { opacity: 0;   transform: translateX(-50%) translateY(-90px) scale(0.85); }
     }
 
     /* ═══════════════════════════════════════════
@@ -606,6 +666,125 @@
     #reset-btn:hover { color: #e74c3c; border-color: #e74c3c; }
 
     /* ═══════════════════════════════════════════
+       CRITICAL FLOAT VARIANTS
+    ═══════════════════════════════════════════ */
+    .float-text.crit3 {
+      font-size: 1.9rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 10px #ff9a00, 0 0 28px #ff6600, 0 2px 6px rgba(0,0,0,0.95);
+      letter-spacing: 1px;
+      animation: floatUpCrit 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .float-text.crit10 {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 14px #ff2244, 0 0 36px #ff0055, 0 0 70px #ff005566, 0 2px 8px rgba(0,0,0,0.95);
+      letter-spacing: 2px;
+      animation: floatUpCrit 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* ═══════════════════════════════════════════
+       COMBO DISPLAY
+    ═══════════════════════════════════════════ */
+    #combo-display {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.82rem;
+      font-weight: 900;
+      color: #ff9a00;
+      text-shadow: 0 0 10px #ff9a0077;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s;
+      white-space: nowrap;
+      z-index: 10;
+      letter-spacing: 1px;
+    }
+    #combo-display.show { opacity: 1; }
+    #combo-display.high { font-size: 1.1rem; color: #ff3322; text-shadow: 0 0 14px #ff332277; animation: comboPop 0.22s ease-out; }
+    @keyframes comboPop {
+      0%   { transform: translateX(-50%) scale(0.75); }
+      55%  { transform: translateX(-50%) scale(1.22); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+
+    /* ═══════════════════════════════════════════
+       PROGRESS RING (SVG)
+    ═══════════════════════════════════════════ */
+    #progress-ring-svg {
+      position: absolute;
+      inset: -20px;
+      width: calc(100% + 40px);
+      height: calc(100% + 40px);
+      pointer-events: none;
+      z-index: 3;
+      transform: rotate(-90deg);
+      overflow: visible;
+    }
+    #ring-track { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 5; }
+    #ring-fill  {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.12s ease-out, stroke 0.3s, filter 0.3s;
+    }
+    #ring-fill.ring-near { stroke: #ff9a00; }
+    #ring-fill.ring-burst {
+      stroke: #fff;
+      filter: drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 22px #ffd700);
+      animation: ringBurst 0.55s ease-out forwards;
+    }
+    @keyframes ringBurst {
+      0%   { opacity: 1; stroke-width: 5; }
+      40%  { opacity: 1; stroke-width: 11; }
+      100% { opacity: 0; stroke-width: 2; }
+    }
+
+    /* ═══════════════════════════════════════════
+       DROP COIN
+    ═══════════════════════════════════════════ */
+    .drop-coin {
+      position: fixed;
+      font-size: 2rem;
+      cursor: pointer;
+      z-index: 260;
+      animation: dropAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards,
+                 dropGlowAnim 0.8s ease-in-out 0.4s infinite alternate;
+      filter: drop-shadow(0 0 10px #ffd700);
+      user-select: none;
+    }
+    @keyframes dropAppear {
+      0%   { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+      100% { opacity: 1; transform: scale(1)   rotate(8deg); }
+    }
+    @keyframes dropGlowAnim {
+      from { filter: drop-shadow(0 0 8px #ffd700); }
+      to   { filter: drop-shadow(0 0 22px #ffe066); }
+    }
+    .drop-coin-timer {
+      position: fixed;
+      font-size: 0.68rem;
+      color: #ffd700;
+      z-index: 261;
+      pointer-events: none;
+      font-weight: bold;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    }
+
+    /* ═══════════════════════════════════════════
+       MEGA CRIT SCREEN FLASH
+    ═══════════════════════════════════════════ */
+    @keyframes flashFade {
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════════
        MOBILE
     ═══════════════════════════════════════════ */
     @media (max-width: 420px) {
@@ -642,7 +821,12 @@
 
     <div id="coin-btn-area">
       <div id="coin-frame-ring"></div>
+      <svg id="progress-ring-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle id="ring-track" cx="50" cy="50" r="46"/>
+        <circle id="ring-fill"  cx="50" cy="50" r="46" stroke-dasharray="289" stroke-dashoffset="289"/>
+      </svg>
       <button id="click-btn" title="Click to earn coins!">🪙</button>
+      <div id="combo-display"></div>
     </div>
 
     <div id="mascot-area">
@@ -851,16 +1035,46 @@
   }
 
   function handleClick(cx, cy) {
-    let earned = state.coinsPerClick;
-    const isLucky = state.upgrades[5] > 0 && Math.random() < 0.10;
-    if (isLucky) earned *= 5;
-    earned = Math.floor(earned * prestigeMultiplier());
+    // ── Crit system ─────────────────────────────
+    var r = Math.random();
+    var hasLucky   = state.upgrades[5] > 0;  // Lucky Click upgrade improves crits
+    var c10Chance  = hasLucky ? 0.04 : 0.02;
+    var c3Chance   = hasLucky ? 0.12 : 0.08;
+    var critMult   = 1;
+    var critClass  = '';
+    var critLabel  = '';
+    if (r < c10Chance) {
+      critMult = 10; critClass = 'crit10'; critLabel = '💥 MEGA ×10 ';
+    } else if (r < c10Chance + c3Chance) {
+      critMult = 3;  critClass = 'crit3';  critLabel = '⚡ CRIT ×3 ';
+    }
 
+    // ── Combo multiplier ─────────────────────────
+    var comboMult = registerComboClick();
+
+    // ── Earned coins ─────────────────────────────
+    var earned = Math.floor(state.coinsPerClick * critMult * comboMult * prestigeMultiplier());
     state.coins       += earned;
     state.totalCoins  += earned;
     state.totalClicks += 1;
 
-    spawnFloat(cx, cy, '+' + formatNum(earned), isLucky);
+    // ── Float text ───────────────────────────────
+    var offX  = (Math.random() - 0.5) * 44;
+    var isSpec = critMult > 1;
+    var label  = isSpec
+      ? critLabel + formatNum(earned) + (comboMult > 1 ? ' ×' + comboMult.toFixed(1) : '')
+      : '+' + formatNum(earned) + (comboMult > 1 ? ' ×' + comboMult.toFixed(1) : '');
+    spawnFloat(cx + offX, cy, label, isSpec, critClass || (isSpec ? 'lucky' : ''));
+
+    // ── MEGA screen flash ─────────────────────────
+    if (critMult === 10) flashScreen();
+
+    // ── Progress ring ─────────────────────────────
+    tickProgressRing(cx, cy);
+
+    // ── Random drop coin ─────────────────────────
+    if (!dropActive && Math.random() < DROP_CHANCE) spawnDropCoin();
+
     checkAchievements();
     checkMissions();
     checkFrameUnlocks();
@@ -1074,9 +1288,12 @@
     return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
   }
 
-  function spawnFloat(x, y, text, lucky) {
-    const el = document.createElement('div');
-    el.className   = 'float-text' + (lucky ? ' lucky' : '');
+  function spawnFloat(x, y, text, lucky, extraClass) {
+    var el = document.createElement('div');
+    var cls = 'float-text';
+    if (extraClass) cls += ' ' + extraClass;
+    else if (lucky)  cls += ' lucky';
+    el.className   = cls;
     el.textContent = text;
     el.style.left  = x + 'px';
     el.style.top   = y + 'px';
@@ -1276,20 +1493,201 @@
   }
 
   /* ════════════════════════════════════════════════
+     SECTION 13 — DOPAMINE SYSTEMS
+     (Crits, Combo, Progress Ring, Drop Coin, Flash)
+  ════════════════════════════════════════════════ */
+
+  /* ── COMBO ── */
+  var comboCount   = 0;
+  var comboDecayTO = null;
+  var lastClickAt  = 0;
+  var COMBO_WINDOW = 800;   // ms — gap allowed between clicks
+  var COMBO_DECAY  = 1600;  // ms — idle before reset
+
+  function getComboMult() {
+    if (comboCount < 5)  return 1;
+    if (comboCount < 10) return 1.5;
+    if (comboCount < 20) return 2;
+    return 3;
+  }
+
+  function registerComboClick() {
+    var now = Date.now();
+    if (now - lastClickAt < COMBO_WINDOW) {
+      comboCount++;
+    } else {
+      comboCount = 1;
+    }
+    lastClickAt = now;
+    clearTimeout(comboDecayTO);
+    comboDecayTO = setTimeout(function() {
+      comboCount = 0;
+      updateComboDisplay();
+    }, COMBO_DECAY);
+    updateComboDisplay();
+    return getComboMult();
+  }
+
+  function updateComboDisplay() {
+    var el = document.getElementById('combo-display');
+    if (!el) return;
+    if (comboCount >= 5) {
+      var mult = getComboMult();
+      el.textContent = '🔥 x' + comboCount + ' COMBO ×' + mult.toFixed(1);
+      el.classList.add('show');
+      var isHigh = comboCount >= 15;
+      if (isHigh && !el.classList.contains('high')) {
+        el.classList.add('high');
+        void el.offsetWidth;
+      } else if (!isHigh) {
+        el.classList.remove('high');
+      }
+    } else {
+      el.textContent = '';
+      el.classList.remove('show', 'high');
+    }
+  }
+
+  /* ── PROGRESS RING ── */
+  var ringClicks  = 0;
+  var RING_TARGET = 25;
+  var RING_CIRC   = 289;
+
+  function tickProgressRing(cx, cy) {
+    ringClicks++;
+    var pct  = ringClicks / RING_TARGET;
+    var fill = document.getElementById('ring-fill');
+    if (!fill) return;
+    fill.classList.remove('ring-near');
+
+    if (ringClicks >= RING_TARGET) {
+      fill.style.strokeDashoffset = '0';
+      fill.classList.add('ring-burst');
+      var bonus = Math.floor(state.coinsPerClick * 20 * prestigeMultiplier());
+      state.coins      += bonus;
+      state.totalCoins += bonus;
+      spawnFloat(cx, cy - 50, '⭕ RING! +' + formatNum(bonus), true, 'lucky');
+      showToast('⭕ Ring complete! +' + formatNum(bonus) + ' coins!');
+      setTimeout(function() {
+        ringClicks = 0;
+        fill.classList.remove('ring-burst', 'ring-near');
+        fill.style.strokeDashoffset = RING_CIRC;
+      }, 650);
+    } else {
+      fill.style.strokeDashoffset = RING_CIRC * (1 - pct);
+      if (pct >= 0.75) fill.classList.add('ring-near');
+    }
+  }
+
+  /* ── DROP COIN ── */
+  var dropActive   = false;
+  var dropTO       = null;
+  var dropInterval = null;
+  var dropSecs     = 3;
+  var DROP_CHANCE  = 0.03;  // 3% per click
+
+  function spawnDropCoin() {
+    dropActive = true;
+    var btnEl   = document.getElementById('click-btn');
+    var bRect   = btnEl.getBoundingClientRect();
+    var angle   = Math.random() * Math.PI * 2;
+    var dist    = 95 + Math.random() * 55;
+    var cx      = bRect.left + bRect.width  / 2;
+    var cy      = bRect.top  + bRect.height / 2;
+    var x       = cx + Math.cos(angle) * dist - 18;
+    var y       = cy + Math.sin(angle) * dist - 18;
+
+    var el = document.createElement('div');
+    el.className = 'drop-coin';
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    el.textContent = '💎';
+
+    var tm = document.createElement('div');
+    tm.className = 'drop-coin-timer';
+    tm.style.left = (x + 6)  + 'px';
+    tm.style.top  = (y + 34) + 'px';
+    tm.textContent = '3s';
+
+    document.body.appendChild(el);
+    document.body.appendChild(tm);
+
+    dropSecs = 3;
+    dropInterval = setInterval(function() {
+      dropSecs--;
+      tm.textContent = dropSecs + 's';
+      if (dropSecs <= 0) hideDropCoin(el, tm);
+    }, 1000);
+    dropTO = setTimeout(function() { hideDropCoin(el, tm); }, 3500);
+
+    el.addEventListener('pointerdown', function(e) {
+      e.stopPropagation();
+      clearTimeout(dropTO);
+      clearInterval(dropInterval);
+      var reward = Math.max(50, Math.floor(state.coinsPerClick * 25 * prestigeMultiplier()));
+      state.coins      += reward;
+      state.totalCoins += reward;
+      var r = el.getBoundingClientRect();
+      spawnFloat(r.left + r.width / 2, r.top, '💎 +' + formatNum(reward), true, 'crit3');
+      hideDropCoin(el, tm);
+      showToast('💎 Rare drop! +' + formatNum(reward) + ' coins!');
+      updateUI();
+      saveGame();
+    });
+  }
+
+  function hideDropCoin(el, tm) {
+    clearTimeout(dropTO);
+    clearInterval(dropInterval);
+    if (el.parentNode) el.remove();
+    if (tm.parentNode) tm.remove();
+    dropActive = false;
+  }
+
+  /* ── MEGA SCREEN FLASH ── */
+  function flashScreen() {
+    var f = document.createElement('div');
+    f.style.cssText = 'position:fixed;inset:0;background:rgba(255,30,60,0.22);pointer-events:none;z-index:199;animation:flashFade 0.45s ease-out forwards';
+    document.body.appendChild(f);
+    f.addEventListener('animationend', function() { f.remove(); });
+  }
+
+  /* ════════════════════════════════════════════════
      SECTION 10 — EVENT LISTENERS & INIT
   ════════════════════════════════════════════════ */
   const btn = document.getElementById('click-btn');
 
-  btn.addEventListener('click', function() {
-    const rect = this.getBoundingClientRect();
-    handleClick(rect.left + rect.width / 2, rect.top + rect.height / 3);
-  });
+  function spawnRipple() {
+    var area = document.getElementById('coin-btn-area');
+    var r = document.createElement('div');
+    r.className = 'coin-ripple';
+    area.appendChild(r);
+    r.addEventListener('animationend', function() { r.remove(); });
+  }
 
-  btn.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    const rect = this.getBoundingClientRect();
-    handleClick(rect.left + rect.width / 2, rect.top + rect.height / 3);
-  }, { passive: false });
+  function onPress() {
+    btn.classList.remove('releasing');
+    btn.classList.add('pressing');
+  }
+
+  function onRelease() {
+    if (!btn.classList.contains('pressing')) return;
+    btn.classList.remove('pressing');
+    btn.classList.add('releasing');
+    spawnRipple();
+    btn.addEventListener('animationend', function done() {
+      btn.classList.remove('releasing');
+      btn.removeEventListener('animationend', done);
+    });
+  }
+
+  btn.addEventListener('pointerdown',   onPress);
+  btn.addEventListener('pointerup',     function()  { onRelease(); var rect = btn.getBoundingClientRect(); handleClick(rect.left + rect.width / 2, rect.top + rect.height / 3); });
+  btn.addEventListener('pointercancel', function()  { btn.classList.remove('pressing'); });
+  btn.addEventListener('pointerleave',  function()  { if (btn.classList.contains('pressing')) { btn.classList.remove('pressing'); btn.classList.add('releasing'); } });
+
+  btn.addEventListener('touchstart', function(e) { e.preventDefault(); }, { passive: false });
+  btn.addEventListener('touchend',   function(e) { e.preventDefault(); }, { passive: false });
 
   /* ── MENU TOGGLE ── */
   function toggleMenu() {
