@@ -2,13 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Coin Clicker</title>
   <style>
     /* ═══════════════════════════════════════════
        RESET & BASE
     ═══════════════════════════════════════════ */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      touch-action: manipulation;  /* prevents double-tap zoom on all elements */
+    }
 
     :root {
       --gold:       #f5c518;
@@ -102,7 +106,7 @@
       font-weight: 700;
       color: var(--gold);
       letter-spacing: 3px;
-      margin-bottom: 10px;
+      margin-bottom: 30px;
     }
 
     #prestige-badge {
@@ -119,14 +123,14 @@
       font-size: 2.4rem;
       font-weight: 700;
       color: #fff;
-      margin-bottom: 2px;
+      margin-bottom: 10px;
     }
     #coin-display span { color: var(--gold); }
 
     #cps-display {
       font-size: 0.82rem;
       color: var(--muted);
-      margin-bottom: 28px;
+      margin-bottom: 15px;
       display: flex;
       gap: 16px;
     }
@@ -851,6 +855,59 @@
     }
 
     /* ═══════════════════════════════════════════
+       QUICK UPGRADE BAR
+    ═══════════════════════════════════════════ */
+    #quick-upgrade-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin-bottom: 16px;
+      width: min(320px, 88vw);
+      margin-bottom: 30px;
+    }
+    #quick-upgrade-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--navy);
+      border: 1px solid var(--navy-border);
+      border-radius: 22px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #quick-upgrade-btn:hover:not(:disabled) { background: #1a4a72; border-color: #2e6da4; transform: scale(1.02); }
+    #quick-upgrade-btn:active:not(:disabled) { transform: scale(0.97); }
+    #quick-upgrade-btn:disabled { opacity: 0.32; cursor: not-allowed; }
+    #quick-upgrade-btn.affordable { border-color: var(--gold); }
+    #qub-name {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #e0e8ff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #qub-cost {
+      font-size: 0.72rem;
+      font-weight: bold;
+      color: var(--gold);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #quick-upgrade-btn:disabled #qub-cost { color: var(--muted); }
+    #qub-label {
+      font-size: 0.62rem;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════
        MOBILE
     ═══════════════════════════════════════════ */
     @media (max-width: 420px) {
@@ -883,6 +940,15 @@
     <div id="cps-display">
       <span>+<em id="cps">0</em>/s</span>
       <span>+<em id="per-click">1</em>/click</span>
+    </div>
+
+    <!-- Quick Upgrade -->
+    <div id="quick-upgrade-bar">
+      <button id="quick-upgrade-btn" onclick="quickUpgrade()" disabled>
+        <span id="qub-label">⚡ Next:</span>
+        <span id="qub-name">No upgrade</span>
+        <span id="qub-cost">🪙—</span>
+      </button>
     </div>
 
     <div id="coin-btn-area">
@@ -1076,6 +1142,7 @@
       critCount:       0,
       comboMax:        0,
       ringsCompleted:  0,
+      cycleCoins:      0,
     };
   }
 
@@ -1119,6 +1186,11 @@
     return 1 + state.prestigeLevel * 0.10;
   }
 
+  // Requirement scales ×3 each prestige: 10K → 30K → 90K → 270K → ...
+  function prestigeRequirement() {
+    return Math.floor(10000 * Math.pow(3, state.prestigeLevel));
+  }
+
   function handleClick(cx, cy) {
     // ── Crit system ─────────────────────────────
     var r = Math.random();
@@ -1141,6 +1213,7 @@
     var earned = Math.floor(state.coinsPerClick * critMult * comboMult * prestigeMultiplier());
     state.coins       += earned;
     state.totalCoins  += earned;
+    state.cycleCoins   = (state.cycleCoins || 0) + earned;
     state.totalClicks += 1;
     if (critMult > 1) state.critCount = (state.critCount || 0) + 1;
     if (comboCount > (state.comboMax || 0)) state.comboMax = comboCount;
@@ -1194,11 +1267,13 @@
   }
 
   function doPrestige() {
-    if (state.coins < 10000) return;
+    var req = prestigeRequirement();
+    if (state.coins < req) return;
     if (!confirm('Prestige resets your coins and upgrades but grants a permanent +10% coin bonus.\n\nProceed?')) return;
 
     state.prestigeLevel++;
     state.coins          = 0;
+    state.cycleCoins     = 0;
     state.coinsPerClick  = 1;
     state.coinsPerSecond = 0;
     state.upgrades       = { 1:0, 2:0, 3:0, 4:0, 5:0 };
@@ -1220,6 +1295,7 @@
       const earned = Math.floor(state.coinsPerSecond * prestigeMultiplier());
       state.coins      += earned;
       state.totalCoins += earned;
+      state.cycleCoins  = (state.cycleCoins || 0) + earned;
     }
     checkMissions();
     checkFrameUnlocks();
@@ -1299,6 +1375,7 @@
     const reward = Math.floor(100 * prestigeMultiplier());
     state.coins      += reward;
     state.totalCoins += reward;
+    state.cycleCoins  = (state.cycleCoins || 0) + reward;
 
     const el   = document.getElementById('golden-coin');
     const rect = el.getBoundingClientRect();
@@ -1336,18 +1413,18 @@
     }
 
     // Prestige
-    var PRESTIGE_REQ = 10000;
-    var pCoins = Math.min(state.coins, PRESTIGE_REQ);
-    var pPct   = Math.floor(pCoins / PRESTIGE_REQ * 100);
+    var PRESTIGE_REQ = prestigeRequirement();
+    var cycleC  = Math.min(state.cycleCoins || 0, PRESTIGE_REQ);
+    var pPct    = Math.floor(cycleC / PRESTIGE_REQ * 100);
     var isReady = state.coins >= PRESTIGE_REQ;
-    document.getElementById('prestige-btn').style.display  = isReady ? 'inline-block' : 'none';
+    document.getElementById('prestige-btn').style.display   = isReady ? 'inline-block' : 'none';
     document.getElementById('prestige-badge').style.display = state.prestigeLevel > 0 ? 'inline-block' : 'none';
     document.getElementById('prestige-level-badge').textContent = state.prestigeLevel;
     document.getElementById('prestige-bonus').textContent       = state.prestigeLevel * 10;
 
-    var barFill = document.getElementById('prestige-bar-fill');
-    var progTxt = document.getElementById('prestige-prog-text');
-    var progPct = document.getElementById('prestige-prog-pct');
+    var barFill  = document.getElementById('prestige-bar-fill');
+    var progTxt  = document.getElementById('prestige-prog-text');
+    var progPct  = document.getElementById('prestige-prog-pct');
     var progWrap = document.getElementById('prestige-progress-wrap');
     if (barFill) {
       barFill.style.width = pPct + '%';
@@ -1358,7 +1435,7 @@
         if (progWrap) progWrap.style.borderColor = 'rgba(245,197,24,0.55)';
       } else {
         barFill.classList.remove('prestige-ready');
-        if (progTxt) progTxt.textContent = '✨ ' + formatNum(pCoins) + ' / 10,000';
+        if (progTxt) progTxt.textContent = '✨ ' + formatNum(cycleC) + ' / ' + formatNum(PRESTIGE_REQ);
         if (progPct) progPct.textContent = pPct + '%';
         if (progWrap) progWrap.style.borderColor = '';
       }
@@ -1381,6 +1458,8 @@
     // Cosmetics
     renderFramePanel();
     updateMascot();
+    // Quick upgrade
+    updateQuickUpgradeBtn();
 
     // Upgrade notification dot
     var canBuy = [1,2,3,4,5].some(function(id) { return state.coins >= upgradeCost(id); });
@@ -1480,7 +1559,11 @@
   function claimMission() {
     if (!pendingMissionClaim) return;
     const mission = MISSIONS_DEF[state.missionIndex];
-    if (mission.reward.coins) { state.coins += mission.reward.coins; state.totalCoins += mission.reward.coins; }
+    if (mission.reward.coins) {
+      state.coins += mission.reward.coins;
+      state.totalCoins += mission.reward.coins;
+      state.cycleCoins  = (state.cycleCoins || 0) + mission.reward.coins;
+    }
     if (mission.reward.cpc)   { state.coinsPerClick  += mission.reward.cpc; }
     if (mission.reward.cps)   { state.coinsPerSecond += mission.reward.cps; }
     state.missionIndex++;
@@ -1608,6 +1691,55 @@
     if (nameEl) nameEl.textContent = stage.name;
   }
 
+  /* ─── QUICK UPGRADE helper ─── */
+  /* Returns the best upgrade to buy:
+     Priority: cheapest that player can afford.
+     If nothing affordable, returns the cheapest overall (to show as goal). */
+  function bestAffordableUpgrade() {
+    var affordable = null;
+    var cheapestAny = null;
+    for (var id = 1; id <= 5; id++) {
+      var cost = upgradeCost(id);
+      if (!cheapestAny || cost < upgradeCost(cheapestAny)) cheapestAny = id;
+      if (state.coins >= cost) {
+        if (!affordable || cost < upgradeCost(affordable)) affordable = id;
+      }
+    }
+    return { id: affordable || cheapestAny, canAfford: affordable !== null };
+  }
+
+  var UPGRADE_NAMES = {
+    1: '⚡ Power Click',
+    2: '🤖 Auto Miner',
+    3: '✌️ Double Click',
+    4: '🚀 Super Miner',
+    5: '🍀 Lucky Click'
+  };
+
+  function quickUpgrade() {
+    var best = bestAffordableUpgrade();
+    if (!best.canAfford) return;
+    buyUpgrade(best.id);
+    // flash the button green briefly
+    var btn = document.getElementById('quick-upgrade-btn');
+    btn.style.background = '#0e4a26';
+    setTimeout(function() { btn.style.background = ''; }, 280);
+  }
+
+  function updateQuickUpgradeBtn() {
+    var best = bestAffordableUpgrade();
+    var btn  = document.getElementById('quick-upgrade-btn');
+    var name = document.getElementById('qub-name');
+    var cost = document.getElementById('qub-cost');
+    if (!btn) return;
+    var id   = best.id;
+    var c    = upgradeCost(id);
+    name.textContent = UPGRADE_NAMES[id];
+    cost.textContent = '🪙 ' + formatNum(c);
+    btn.disabled     = !best.canAfford;
+    btn.classList.toggle('affordable', best.canAfford);
+  }
+
   /* ════════════════════════════════════════════════
      SECTION 13 — DOPAMINE SYSTEMS
      (Crits, Combo, Progress Ring, Drop Coin, Flash)
@@ -1683,6 +1815,7 @@
       var bonus = Math.floor(state.coinsPerClick * 20 * prestigeMultiplier());
       state.coins          += bonus;
       state.totalCoins     += bonus;
+      state.cycleCoins      = (state.cycleCoins || 0) + bonus;
       state.ringsCompleted  = (state.ringsCompleted || 0) + 1;
       if (rc) { rc.textContent = '⭕ ' + RING_TARGET + ' / ' + RING_TARGET; rc.classList.add('near'); }
       spawnFloat(cx, cy - 50, '⭕ RING! +' + formatNum(bonus), true, 'lucky');
@@ -1754,6 +1887,7 @@
       var reward = Math.max(50, Math.floor(state.coinsPerClick * 25 * prestigeMultiplier()));
       state.coins      += reward;
       state.totalCoins += reward;
+      state.cycleCoins  = (state.cycleCoins || 0) + reward;
       var r = el.getBoundingClientRect();
       spawnFloat(r.left + r.width / 2, r.top, '💎 +' + formatNum(reward), true, 'crit3');
       hideDropCoin(el, tm);
