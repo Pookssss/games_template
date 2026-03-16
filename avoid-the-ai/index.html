@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avoid The AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="game-card">
+      <a class="back-link" href="../index.html" aria-label="Back to game menu">&larr; Back</a>
+
+      <div class="hero-row">
+        <div>
+          <p class="eyebrow">Reaction Challenge</p>
+          <h1>Avoid The AI</h1>
+          <p class="subtitle">Catch the runaway AI before the 10-second timer ends.</p>
+        </div>
+        <div class="best-score-panel">
+          <span class="best-label">Best Score</span>
+          <strong id="bestScoreValue">0</strong>
+        </div>
+      </div>
+
+      <section class="hud" aria-label="Game status">
+        <article class="hud-tile">
+          <span class="hud-label">Score</span>
+          <strong id="scoreValue">0</strong>
+        </article>
+        <article class="hud-tile">
+          <span class="hud-label">Time</span>
+          <strong id="timeValue">10.0s</strong>
+        </article>
+        <article class="hud-tile combo-tile">
+          <span class="hud-label">Combo</span>
+          <strong id="comboValue">x1</strong>
+        </article>
+      </section>
+
+      <section class="controls" aria-label="Game controls">
+        <button id="startButton" class="ui-button primary">Start Game</button>
+        <button id="restartButton" class="ui-button secondary" disabled>Restart</button>
+        <button id="shareButton" class="ui-button ghost" disabled>Share Score</button>
+      </section>
+
+      <section class="arena-panel">
+        <div id="arena" class="arena" aria-label="Game arena">
+          <div class="arena-grid" aria-hidden="true"></div>
+          <button id="aiButton" class="ai-button hidden" type="button">AI</button>
+          <div id="aiMessage" class="ai-message hidden" aria-live="polite"></div>
+          <div id="statusToast" class="status-toast">Press Start Game to begin.</div>
+
+          <div id="overlay" class="overlay">
+            <div class="overlay-card">
+              <p class="overlay-kicker">Ready?</p>
+              <h2 id="overlayTitle">Avoid The AI</h2>
+              <p id="overlayText">The AI will dodge your cursor. Catch it as many times as you can in 10 seconds.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

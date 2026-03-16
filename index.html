@@ -108,6 +108,15 @@
     .card-pizza:hover { box-shadow: 0 12px 40px rgba(255,107,53,0.35); }
     .card-pizza::before { background: #ff6b35; }
 
+    /* Avoid The AI */
+    .card-ai {
+      background: #081827;
+      border: 1px solid #1f4d63;
+      box-shadow: 0 4px 24px rgba(116,242,206,0.18);
+    }
+    .card-ai:hover { box-shadow: 0 12px 40px rgba(116,242,206,0.34); }
+    .card-ai::before { background: #74f2ce; }
+
     /* Card icon */
     .card-icon {
       font-size: 4rem;
@@ -132,6 +141,7 @@
     .card-coffee   .card-name { color: #d4883a; }
     .card-programmer .card-name { color: #39d353; }
     .card-pizza    .card-name { color: #ff6b35; }
+    .card-ai       .card-name { color: #74f2ce; }
 
     .card-desc {
       font-size: 0.85rem;
@@ -158,6 +168,7 @@
     .card-coffee     .tag { color: #d4883a; border-color: #3a2010; background: #1a0e05; }
     .card-programmer .tag { color: #39d353; border-color: #21362d; background: #0a1f0a; }
     .card-pizza      .tag { color: #ff6b35; border-color: #4a2010; background: #1a0800; }
+    .card-ai         .tag { color: #74f2ce; border-color: #1f4d63; background: #081a22; }
 
     .play-btn {
       margin-top: 8px;
@@ -178,6 +189,7 @@
     .card-coffee     .play-btn { background: #d4883a; color: #1a0800; }
     .card-programmer .play-btn { background: #39d353; color: #051005; }
     .card-pizza      .play-btn { background: #ff6b35; color: #1a0400; }
+    .card-ai         .play-btn { background: #74f2ce; color: #04141e; }
 
     /* ── Footer ─────────────────────────────── */
     footer {
@@ -213,6 +225,19 @@
         <span class="tag">Prestige</span>
       </div>
       <a class="play-btn" href="Coin-Clicker/index.html">▶ Play</a>
+    </div>
+
+    <!-- Avoid The AI -->
+    <div class="card card-ai" onclick="location.href='avoid-the-ai/index.html'">
+      <div class="card-icon">🤖</div>
+      <div class="card-name">Avoid The AI</div>
+      <div class="card-desc">A fast reaction game where the AI dodges your cursor and fights to stay unclicked.</div>
+      <div class="card-tags">
+        <span class="tag">Reaction</span>
+        <span class="tag">Arcade</span>
+        <span class="tag">10 Seconds</span>
+      </div>
+      <a class="play-btn" href="avoid-the-ai/index.html">▶ Play</a>
     </div>
 
     <!-- Coffee Clicker -->
