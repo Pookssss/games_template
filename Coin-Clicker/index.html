@@ -112,7 +112,7 @@
       color: #fff;
       border-radius: 20px;
       padding: 3px 12px;
-      margin-bottom: 8px;
+      margin-bottom: 20px;
     }
 
     #coin-display {
@@ -266,6 +266,55 @@
     @keyframes glowPrestige {
       0%,100% { box-shadow: 0 0 8px #8e44ad88; }
       50%      { box-shadow: 0 0 22px #8e44adcc; }
+    }
+
+    /* ═══════════════════════════════════════════
+       PRESTIGE PROGRESS
+    ═══════════════════════════════════════════ */
+    #prestige-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      width: min(280px, 72vw);
+    }
+    #prestige-progress-wrap {
+      width: 100%;
+      background: rgba(142,68,173,0.10);
+      border: 1px solid rgba(142,68,173,0.30);
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+    #prestige-progress-label {
+      font-size: 0.72rem;
+      color: #9b7fc0;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      letter-spacing: 0.3px;
+    }
+    #prestige-progress-label span { color: #c39bd3; font-weight: bold; }
+    #prestige-bar-track {
+      background: rgba(142,68,173,0.18);
+      border-radius: 6px;
+      height: 7px;
+      overflow: hidden;
+    }
+    #prestige-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8e44ad, #a855e8);
+      border-radius: 6px;
+      transition: width 0.35s ease-out, background 0.4s;
+      width: 0%;
+    }
+    #prestige-bar-fill.prestige-ready {
+      background: linear-gradient(90deg, var(--gold), #ff9a00);
+      animation: barPulse 1s ease-in-out infinite;
+    }
+    @keyframes barPulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.65; }
     }
 
     /* ═══════════════════════════════════════════
@@ -734,6 +783,15 @@
       transition: stroke-dashoffset 0.12s ease-out, stroke 0.3s, filter 0.3s;
     }
     #ring-fill.ring-near { stroke: #ff9a00; }
+    #ring-counter {
+      font-size: 0.68rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-top: 20px;
+      transition: color 0.3s;
+      pointer-events: none;
+    }
+    #ring-counter.near { color: #ff9a00; font-weight: bold; }
     #ring-fill.ring-burst {
       stroke: #fff;
       filter: drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 22px #ffd700);
@@ -765,6 +823,14 @@
     @keyframes dropGlowAnim {
       from { filter: drop-shadow(0 0 8px #ffd700); }
       to   { filter: drop-shadow(0 0 22px #ffe066); }
+    }
+    .drop-coin.fading {
+      animation: dropFade 0.35s ease-out forwards !important;
+      pointer-events: none;
+    }
+    @keyframes dropFade {
+      0%   { opacity: 1; transform: scale(1) rotate(8deg); }
+      100% { opacity: 0; transform: scale(0.35) rotate(28deg) translateY(-22px); }
     }
     .drop-coin-timer {
       position: fixed;
@@ -829,13 +895,26 @@
       <div id="combo-display"></div>
     </div>
 
+    <div id="ring-counter">⭕ 0 / 25</div>
+
     <div id="mascot-area">
       <div id="mascot-emoji">🪨</div>
       <div id="mascot-name">Rookie Miner</div>
     </div>
     <div id="per-click-label">Tap the coin!</div>
 
-    <button id="prestige-btn" onclick="doPrestige()">✨ Prestige (resets, +10% bonus)</button>
+    <div id="prestige-area">
+      <button id="prestige-btn" onclick="doPrestige()">✨ Prestige (resets, +10% bonus)</button>
+      <div id="prestige-progress-wrap">
+        <div id="prestige-progress-label">
+          <span id="prestige-prog-text">✨ 0 / 10,000</span>
+          <span id="prestige-prog-pct">0%</span>
+        </div>
+        <div id="prestige-bar-track">
+          <div id="prestige-bar-fill"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ═════════════════════════
@@ -858,9 +937,9 @@
       <div id="tab-bar">
         <button class="tab-btn active" data-tab="upgrades">🛒 Upgrades</button>
         <button class="tab-btn" data-tab="stats">📊 Stats</button>
-        <button class="tab-btn" data-tab="achievements">🏆</button>
+        <button class="tab-btn" data-tab="achievements">🏆 Ach.</button>
         <button class="tab-btn" data-tab="missions">🎯 Missions</button>
-        <button class="tab-btn" data-tab="collection">🎨</button>
+        <button class="tab-btn" data-tab="collection">🎨 Skins</button>
       </div>
 
       <!-- UPGRADES -->
@@ -900,7 +979,7 @@
         <div class="upgrade-card" id="card-5">
           <div class="upgrade-info">
             <h3>🍀 Lucky Click</h3>
-            <p>10% chance for ×5 coins on click</p>
+            <p>Boosts crits: MEGA 2→4%, CRIT 8→12%</p>
             <div class="owned">Owned: <span id="u5-owned">0</span></div>
           </div>
           <button class="buy-btn" id="u5-btn" onclick="buyUpgrade(5)">🪙 <span id="u5-cost">200</span></button>
@@ -913,6 +992,9 @@
         <div class="stat-row">Total Coins Earned <span id="stat-total-coins">0</span></div>
         <div class="stat-row">Play Time <span id="stat-playtime">0s</span></div>
         <div class="stat-row">Prestige Level <span id="stat-prestige">0</span></div>
+        <div class="stat-row">CRIT Hits <span id="stat-crits">0</span></div>
+        <div class="stat-row">Best Combo <span id="stat-combo">0</span></div>
+        <div class="stat-row">Rings Completed <span id="stat-rings">0</span></div>
       </div>
 
       <!-- ACHIEVEMENTS -->
@@ -979,18 +1061,21 @@
 
   function defaultState() {
     return {
-      coins:          0,
-      coinsPerClick:  1,
-      coinsPerSecond: 0,
-      upgrades:       { 1:0, 2:0, 3:0, 4:0, 5:0 },
-      totalClicks:    0,
-      totalCoins:     0,
-      prestigeLevel:  0,
+      coins:           0,
+      coinsPerClick:   1,
+      coinsPerSecond:  0,
+      upgrades:        { 1:0, 2:0, 3:0, 4:0, 5:0 },
+      totalClicks:     0,
+      totalCoins:      0,
+      prestigeLevel:   0,
       achievements:    {},
       playedSeconds:   0,
       missionIndex:    0,
       unlockedFrames:  ['none'],
       equippedFrame:   'none',
+      critCount:       0,
+      comboMax:        0,
+      ringsCompleted:  0,
     };
   }
 
@@ -1057,6 +1142,8 @@
     state.coins       += earned;
     state.totalCoins  += earned;
     state.totalClicks += 1;
+    if (critMult > 1) state.critCount = (state.critCount || 0) + 1;
+    if (comboCount > (state.comboMax || 0)) state.comboMax = comboCount;
 
     // ── Float text ───────────────────────────────
     var offX  = (Math.random() - 0.5) * 44;
@@ -1249,16 +1336,45 @@
     }
 
     // Prestige
-    document.getElementById('prestige-btn').style.display  = state.coins >= 10000 ? 'inline-block' : 'none';
+    var PRESTIGE_REQ = 10000;
+    var pCoins = Math.min(state.coins, PRESTIGE_REQ);
+    var pPct   = Math.floor(pCoins / PRESTIGE_REQ * 100);
+    var isReady = state.coins >= PRESTIGE_REQ;
+    document.getElementById('prestige-btn').style.display  = isReady ? 'inline-block' : 'none';
     document.getElementById('prestige-badge').style.display = state.prestigeLevel > 0 ? 'inline-block' : 'none';
     document.getElementById('prestige-level-badge').textContent = state.prestigeLevel;
     document.getElementById('prestige-bonus').textContent       = state.prestigeLevel * 10;
+
+    var barFill = document.getElementById('prestige-bar-fill');
+    var progTxt = document.getElementById('prestige-prog-text');
+    var progPct = document.getElementById('prestige-prog-pct');
+    var progWrap = document.getElementById('prestige-progress-wrap');
+    if (barFill) {
+      barFill.style.width = pPct + '%';
+      if (isReady) {
+        barFill.classList.add('prestige-ready');
+        if (progTxt) progTxt.textContent = '✨ READY TO PRESTIGE!';
+        if (progPct) progPct.textContent = '100%';
+        if (progWrap) progWrap.style.borderColor = 'rgba(245,197,24,0.55)';
+      } else {
+        barFill.classList.remove('prestige-ready');
+        if (progTxt) progTxt.textContent = '✨ ' + formatNum(pCoins) + ' / 10,000';
+        if (progPct) progPct.textContent = pPct + '%';
+        if (progWrap) progWrap.style.borderColor = '';
+      }
+    }
 
     // Stats
     document.getElementById('stat-clicks').textContent      = formatNum(state.totalClicks);
     document.getElementById('stat-total-coins').textContent = formatNum(state.totalCoins);
     document.getElementById('stat-prestige').textContent    = state.prestigeLevel;
     document.getElementById('stat-playtime').textContent    = formatTime(state.playedSeconds);
+    var sCrits = document.getElementById('stat-crits');
+    if (sCrits) sCrits.textContent = formatNum(state.critCount || 0);
+    var sCombo = document.getElementById('stat-combo');
+    if (sCombo) sCombo.textContent = state.comboMax || 0;
+    var sRings = document.getElementById('stat-rings');
+    if (sRings) sRings.textContent = state.ringsCompleted || 0;
 
     // Missions
     renderMissions();
@@ -1557,6 +1673,7 @@
     ringClicks++;
     var pct  = ringClicks / RING_TARGET;
     var fill = document.getElementById('ring-fill');
+    var rc   = document.getElementById('ring-counter');
     if (!fill) return;
     fill.classList.remove('ring-near');
 
@@ -1564,18 +1681,27 @@
       fill.style.strokeDashoffset = '0';
       fill.classList.add('ring-burst');
       var bonus = Math.floor(state.coinsPerClick * 20 * prestigeMultiplier());
-      state.coins      += bonus;
-      state.totalCoins += bonus;
+      state.coins          += bonus;
+      state.totalCoins     += bonus;
+      state.ringsCompleted  = (state.ringsCompleted || 0) + 1;
+      if (rc) { rc.textContent = '⭕ ' + RING_TARGET + ' / ' + RING_TARGET; rc.classList.add('near'); }
       spawnFloat(cx, cy - 50, '⭕ RING! +' + formatNum(bonus), true, 'lucky');
       showToast('⭕ Ring complete! +' + formatNum(bonus) + ' coins!');
       setTimeout(function() {
         ringClicks = 0;
         fill.classList.remove('ring-burst', 'ring-near');
         fill.style.strokeDashoffset = RING_CIRC;
+        if (rc) { rc.textContent = '⭕ 0 / ' + RING_TARGET; rc.classList.remove('near'); }
       }, 650);
     } else {
       fill.style.strokeDashoffset = RING_CIRC * (1 - pct);
-      if (pct >= 0.75) fill.classList.add('ring-near');
+      if (rc) {
+        rc.textContent = '⭕ ' + ringClicks + ' / ' + RING_TARGET;
+        if (pct >= 0.75) { fill.classList.add('ring-near'); rc.classList.add('near'); }
+        else rc.classList.remove('near');
+      } else {
+        if (pct >= 0.75) fill.classList.add('ring-near');
+      }
     }
   }
 
@@ -1587,6 +1713,7 @@
   var DROP_CHANCE  = 0.03;  // 3% per click
 
   function spawnDropCoin() {
+    if (goldenActive) return;   // don't overlap with golden coin event
     dropActive = true;
     var btnEl   = document.getElementById('click-btn');
     var bRect   = btnEl.getBoundingClientRect();
@@ -1639,8 +1766,11 @@
   function hideDropCoin(el, tm) {
     clearTimeout(dropTO);
     clearInterval(dropInterval);
-    if (el.parentNode) el.remove();
-    if (tm.parentNode) tm.remove();
+    if (tm && tm.parentNode) tm.remove();
+    if (el && el.parentNode) {
+      el.classList.add('fading');
+      setTimeout(function() { if (el.parentNode) el.remove(); }, 380);
+    }
     dropActive = false;
   }
 
