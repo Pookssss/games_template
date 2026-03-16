@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Programmer Clicker</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 60px;
+    }
+
+    h1 { font-size: 2rem; color: #39d353; letter-spacing: 2px; margin-bottom: 4px; }
+
+    #prestige-badge {
+      display: none;
+      font-size: 0.8rem;
+      background: linear-gradient(135deg, #1f6feb, #39d353);
+      color: #fff;
+      border-radius: 20px;
+      padding: 3px 12px;
+      margin-bottom: 8px;
+    }
+
+    #coin-display { font-size: 1.5rem; color: #8b949e; margin-bottom: 2px; }
+    #coin-display span { color: #39d353; font-weight: bold; }
+    #cps-display { font-size: 0.9rem; color: #484f58; margin-bottom: 24px; }
+
+    #click-btn {
+      width: clamp(130px, 25vw, 170px);
+      height: clamp(130px, 25vw, 170px);
+      border-radius: 50%;
+      border: 3px solid #39d353;
+      background: radial-gradient(circle at 35% 35%, #1c2128, #0d1117);
+      box-shadow: 0 0 24px rgba(57,211,83,0.4);
+      font-size: clamp(2.8rem, 6vw, 3.5rem);
+      cursor: pointer;
+      transition: transform 0.08s, box-shadow 0.08s;
+      user-select: none;
+      animation: codePulse 2s ease-in-out infinite;
+    }
+    #click-btn:hover { box-shadow: 0 0 40px rgba(57,211,83,0.8); animation: none; transform: scale(1.04); }
+    #click-btn:active { transform: scale(0.91) !important; animation: none; }
+
+    @keyframes codePulse {
+      0%,100% { box-shadow: 0 0 24px rgba(57,211,83,0.4); }
+      50%      { box-shadow: 0 0 44px rgba(57,211,83,0.85); }
+    }
+
+    #per-click-label { margin-top: 10px; font-size: 0.85rem; color: #484f58; margin-bottom: 6px; }
+
+    #prestige-btn {
+      display: none;
+      margin-top: 10px;
+      padding: 8px 22px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #1f6feb, #39d353);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      animation: glowDeploy 1.5s ease-in-out infinite;
+    }
+    #prestige-btn:hover { opacity: 0.85; transform: scale(1.04); }
+    @keyframes glowDeploy {
+      0%,100% { box-shadow: 0 0 8px #1f6feb88; }
+      50%      { box-shadow: 0 0 22px #39d353cc; }
+    }
+
+    #main-layout {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 24px; width: 100%; max-width: 860px; margin-top: 28px;
+    }
+
+    .panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 14px;
+      padding: 18px 20px;
+      flex: 1 1 340px; min-width: 280px;
+    }
+
+    .panel-title {
+      font-size: 0.85rem; color: #8b949e; text-transform: uppercase;
+      letter-spacing: 2px; margin-bottom: 14px;
+      border-bottom: 1px solid #30363d; padding-bottom: 8px;
+    }
+
+    .upgrade-card {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      transition: border-color 0.2s;
+    }
+    .upgrade-card:hover { border-color: #39d353; }
+    .upgrade-card.purchased { animation: purchasePop 0.35s ease-out; }
+    @keyframes purchasePop { 0%{transform:scale(1)} 40%{transform:scale(1.04)} 100%{transform:scale(1)} }
+
+    .upgrade-info { flex: 1; }
+    .upgrade-info h3 { font-size: 0.95rem; color: #e6edf3; margin-bottom: 2px; }
+    .upgrade-info p  { font-size: 0.78rem; color: #484f58; }
+    .upgrade-info .owned { font-size: 0.75rem; color: #58a6ff; margin-top: 2px; }
+
+    .buy-btn {
+      background: #21262d; color: #39d353;
+      border: 1px solid #30363d; border-radius: 8px;
+      padding: 7px 13px; font-size: 0.82rem; font-weight: bold;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.15s, transform 0.1s; min-width: 72px; text-align: center;
+    }
+    .buy-btn:hover:not(:disabled) { background: #30363d; transform: scale(1.05); }
+    .buy-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .stat-row {
+      display: flex; justify-content: space-between; font-size: 0.85rem;
+      padding: 6px 0; border-bottom: 1px solid #21262d; color: #8b949e;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row span { color: #39d353; font-weight: bold; }
+
+    #achievements-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ach-badge {
+      background: #0d1117; border: 1px solid #21262d;
+      border-radius: 20px; padding: 5px 12px; font-size: 0.78rem; color: #3d444d;
+    }
+    .ach-badge.unlocked { border-color: #39d353; color: #39d353; background: #0a1f0a; }
+
+    .float-text {
+      position: fixed; font-size: 1.1rem; font-weight: bold; color: #39d353;
+      pointer-events: none; animation: floatUp 0.9s ease-out forwards; z-index: 200;
+      transform: translateX(-50%);
+    }
+    .float-text.lucky { color: #58a6ff; font-size: 1.3rem; }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-70px); }
+    }
+
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #0a1f0a; border: 1px solid #39d353; color: #39d353;
+      border-radius: 10px; padding: 10px 20px; font-size: 0.88rem; font-weight: bold;
+      z-index: 300; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; max-width: 90vw; text-align: center;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    #bonus-event {
+      display: none; position: fixed; font-size: 2.6rem; cursor: pointer; z-index: 250;
+      animation: bonusBounce 0.7s ease-in-out infinite alternate, bonusGlow 1s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 8px #39d353); user-select: none;
+    }
+    @keyframes bonusBounce { from{transform:translateY(0) rotate(-6deg)} to{transform:translateY(-12px) rotate(6deg)} }
+    @keyframes bonusGlow { from{filter:drop-shadow(0 0 6px #39d353)} to{filter:drop-shadow(0 0 18px #7ee787)} }
+    #bonus-timer {
+      display: none; position: fixed; font-size: 0.72rem; color: #39d353;
+      z-index: 251; pointer-events: none; font-weight: bold;
+    }
+
+    #reset-btn {
+      margin-top: 28px; background: transparent; border: 1px solid #333; color: #444;
+      border-radius: 8px; padding: 7px 20px; font-size: 0.76rem; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #reset-btn:hover { color: #e74c3c; border-color: #e74c3c; }
+
+    #back-btn {
+      position: fixed; top: 16px; left: 16px;
+      background: #21262d; border: 1px solid #30363d; color: #39d353;
+      border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer;
+      text-decoration: none; transition: background 0.15s;
+    }
+    #back-btn:hover { background: #30363d; }
+
+    @media (max-width:500px) {
+      h1{font-size:1.5rem} #coin-display{font-size:1.2rem}
+      .panel{padding:14px} .buy-btn{padding:6px 10px; font-size:0.78rem}
+      #toast{white-space:normal}
+    }
+  </style>
+</head>
+<body>
+  <a id="back-btn" href="../index.html">← Games</a>
+
+  <h1>💻 Programmer Clicker</h1>
+  <div id="prestige-badge">🚀 Deployed <span id="prestige-level-badge">1</span>× — +<span id="prestige-bonus">10</span>% bonus</div>
+
+  <div id="coin-display">Lines: <span id="coins">0</span></div>
+  <div id="cps-display">Per second: <span id="cps">0</span> &nbsp;|&nbsp; Per click: <span id="per-click">1</span></div>
+
+  <button id="click-btn" title="Write code!">💻</button>
+  <div id="per-click-label">&gt; write_code()</div>
+  <button id="prestige-btn" onclick="doPrestige()">🚀 Deploy to Prod (resets, +10% bonus)</button>
+
+  <div id="main-layout">
+    <div class="panel">
+      <div class="panel-title">🛠️ Upgrades</div>
+
+      <div class="upgrade-card" id="card-1">
+        <div class="upgrade-info">
+          <h3>📝 Better IDE</h3>
+          <p>+1 line per click</p>
+          <div class="owned">Owned: <span id="u1-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u1-btn" onclick="buyUpgrade(1)">💻 <span id="u1-cost">10</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-2">
+        <div class="upgrade-info">
+          <h3>🤖 Auto-Complete</h3>
+          <p>+1 line per second</p>
+          <div class="owned">Owned: <span id="u2-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u2-btn" onclick="buyUpgrade(2)">💻 <span id="u2-cost">25</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-3">
+        <div class="upgrade-info">
+          <h3>🔍 Code Review</h3>
+          <p>+2 lines per click</p>
+          <div class="owned">Owned: <span id="u3-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u3-btn" onclick="buyUpgrade(3)">💻 <span id="u3-cost">50</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-4">
+        <div class="upgrade-info">
+          <h3>⚙️ CI/CD Pipeline</h3>
+          <p>+5 lines per second</p>
+          <div class="owned">Owned: <span id="u4-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u4-btn" onclick="buyUpgrade(4)">💻 <span id="u4-cost">100</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-5">
+        <div class="upgrade-info">
+          <h3>🍀 Lucky Hack</h3>
+          <p>10% chance for ×5 lines on click</p>
+          <div class="owned">Owned: <span id="u5-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u5-btn" onclick="buyUpgrade(5)">💻 <span id="u5-cost">200</span></button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:24px;flex:1 1 280px;min-width:260px;">
+      <div class="panel">
+        <div class="panel-title">📊 Statistics</div>
+        <div class="stat-row">Total Commits <span id="stat-clicks">0</span></div>
+        <div class="stat-row">Total Lines Written <span id="stat-total-coins">0</span></div>
+        <div class="stat-row">Time Coding <span id="stat-playtime">0s</span></div>
+        <div class="stat-row">Deploy Count <span id="stat-prestige">0</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">🏆 Achievements</div>
+        <div id="achievements-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="reset-btn" onclick="resetGame()">Reset game</button>
+
+  <div id="bonus-event" onclick="claimBonus()">⚡</div>
+  <div id="bonus-timer"></div>
+  <div id="toast"></div>
+
+  <script>
+  /* ── GAME STATE ─────────────────────────────── */
+  const UPGRADES_DEF = {
+    1:{baseCost:10,scale:1.40}, 2:{baseCost:25,scale:1.50},
+    3:{baseCost:50,scale:1.60}, 4:{baseCost:100,scale:1.70}, 5:{baseCost:200,scale:1.80}
+  };
+
+  const ACHIEVEMENTS_DEF = [
+    { id:'first_commit',  label:'💾 First Commit',         check:s=>s.totalClicks>=1      },
+    { id:'commits_100',   label:'💯 100 Commits',           check:s=>s.totalClicks>=100    },
+    { id:'lines_1000',    label:'📜 1,000 Lines Written',   check:s=>s.totalCoins>=1000    },
+    { id:'first_upgrade', label:'🛠️ First Upgrade',         check:s=>totalOwned(s)>=1      },
+    { id:'own_autocomplete', label:'🤖 Auto-Complete',      check:s=>s.upgrades[2]>=1      },
+    { id:'lines_10k',     label:'🏦 10K Lines Written',     check:s=>s.totalCoins>=10000   },
+    { id:'deployed',      label:'🚀 First Deploy',          check:s=>s.prestigeLevel>=1    },
+  ];
+
+  const SAVE_KEY = 'programmerClickerV1';
+  const BONUS_EMOJI = '⚡';
+  const BONUS_LABEL = 'Hackathon';
+
+  function defaultState() {
+    return { coins:0, coinsPerClick:1, coinsPerSecond:0,
+      upgrades:{1:0,2:0,3:0,4:0,5:0}, totalClicks:0, totalCoins:0,
+      prestigeLevel:0, achievements:{}, playedSeconds:0 };
+  }
+
+  let state = defaultState();
+
+  /* ── STORAGE ────────────────────────────────── */
+  function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+  function loadGame() {
+    try {
+      const s = localStorage.getItem(SAVE_KEY);
+      if (!s) return;
+      state = Object.assign(defaultState(), JSON.parse(s));
+      for (let k=1;k<=5;k++) if (!state.upgrades[k]) state.upgrades[k]=0;
+    } catch(e){}
+  }
+  setInterval(saveGame, 5000);
+
+  /* ── GAME LOGIC ─────────────────────────────── */
+  function upgradeCost(id){ const d=UPGRADES_DEF[id]; return Math.floor(d.baseCost*Math.pow(d.scale,state.upgrades[id])); }
+  function totalOwned(s){ return Object.values(s.upgrades).reduce((a,b)=>a+b,0); }
+  function prestigeMultiplier(){ return 1+state.prestigeLevel*0.10; }
+
+  function handleClick(cx,cy){
+    let earned=state.coinsPerClick;
+    const lucky=state.upgrades[5]>0&&Math.random()<0.10;
+    if(lucky) earned*=5;
+    earned=Math.floor(earned*prestigeMultiplier());
+    state.coins+=earned; state.totalCoins+=earned; state.totalClicks+=1;
+    spawnFloat(cx,cy,'+'+formatNum(earned),lucky);
+    checkAchievements(); updateUI();
+  }
+
+  function buyUpgrade(id){
+    const cost=upgradeCost(id); if(state.coins<cost) return;
+    state.coins-=cost; state.upgrades[id]++;
+    if(id===1) state.coinsPerClick+=1;
+    if(id===2) state.coinsPerSecond+=1;
+    if(id===3) state.coinsPerClick+=2;
+    if(id===4) state.coinsPerSecond+=5;
+    const card=document.getElementById('card-'+id);
+    card.classList.remove('purchased'); void card.offsetWidth; card.classList.add('purchased');
+    checkAchievements(); updateUI(); saveGame();
+  }
+
+  function doPrestige(){
+    if(state.coins<10000) return;
+    if(!confirm('Deploy to Prod resets Lines & upgrades but grants +10% permanent bonus.\n\nMerge to main?')) return;
+    state.prestigeLevel++;
+    state.coins=0; state.coinsPerClick=1; state.coinsPerSecond=0;
+    state.upgrades={1:0,2:0,3:0,4:0,5:0};
+    checkAchievements(); updateUI(); saveGame();
+    showToast('🚀 Deploy #'+state.prestigeLevel+' live! +'+(state.prestigeLevel*10)+'% bonus!');
+  }
+
+  /* ── AUTO TICK ──────────────────────────────── */
+  setInterval(function(){
+    state.playedSeconds++;
+    if(state.coinsPerSecond>0){
+      const e=Math.floor(state.coinsPerSecond*prestigeMultiplier());
+      state.coins+=e; state.totalCoins+=e;
+    }
+    updateUI();
+  }, 1000);
+
+  /* ── ACHIEVEMENTS ───────────────────────────── */
+  function checkAchievements(){
+    ACHIEVEMENTS_DEF.forEach(function(def){
+      if(!state.achievements[def.id]&&def.check(state)){
+        state.achievements[def.id]=true;
+        showToast('🏆 Achievement: '+def.label);
+        renderAchievements();
+      }
+    });
+  }
+  function renderAchievements(){
+    const list=document.getElementById('achievements-list'); list.innerHTML='';
+    ACHIEVEMENTS_DEF.forEach(function(def){
+      const b=document.createElement('div');
+      b.className='ach-badge'+(state.achievements[def.id]?' unlocked':'');
+      b.textContent=def.label; list.appendChild(b);
+    });
+  }
+
+  /* ── BONUS EVENT ────────────────────────────── */
+  let bonusActive=false, bonusTO=null, bonusIV=null, bonusSecs=5;
+  function scheduleBonus(){ setTimeout(spawnBonus,(30+Math.random()*60)*1000); }
+  function spawnBonus(){
+    if(bonusActive) return; bonusActive=true;
+    const el=document.getElementById('bonus-event'), tm=document.getElementById('bonus-timer');
+    const m=70, x=m+Math.random()*(window.innerWidth-m*2), y=m+Math.random()*(window.innerHeight-m*2);
+    el.style.left=x+'px'; el.style.top=y+'px';
+    tm.style.left=x+'px'; tm.style.top=(y+58)+'px';
+    bonusSecs=5; el.style.display='block'; tm.style.display='block'; tm.textContent='⏱ 5s';
+    bonusIV=setInterval(function(){ bonusSecs--; tm.textContent='⏱ '+bonusSecs+'s'; if(bonusSecs<=0) hideBonus(); },1000);
+    bonusTO=setTimeout(hideBonus,5500);
+  }
+  function claimBonus(){
+    if(!bonusActive) return;
+    clearTimeout(bonusTO); clearInterval(bonusIV);
+    const reward=Math.floor(100*prestigeMultiplier());
+    state.coins+=reward; state.totalCoins+=reward;
+    const el=document.getElementById('bonus-event'), rect=el.getBoundingClientRect();
+    spawnFloat(rect.left+rect.width/2, rect.top, '+'+reward+' '+BONUS_EMOJI, true);
+    hideBonus(false); showToast(BONUS_EMOJI+' '+BONUS_LABEL+'! +'+reward+' lines!');
+    updateUI(); saveGame();
+  }
+  function hideBonus(){
+    clearTimeout(bonusTO); clearInterval(bonusIV);
+    document.getElementById('bonus-event').style.display='none';
+    document.getElementById('bonus-timer').style.display='none';
+    bonusActive=false; scheduleBonus();
+  }
+
+  /* ── UI ─────────────────────────────────────── */
+  function updateUI(){
+    document.getElementById('coins').textContent=formatNum(Math.floor(state.coins));
+    document.getElementById('per-click').textContent=state.coinsPerClick;
+    document.getElementById('cps').textContent=state.coinsPerSecond;
+    for(let id=1;id<=5;id++){
+      const c=upgradeCost(id);
+      document.getElementById('u'+id+'-cost').textContent=formatNum(c);
+      document.getElementById('u'+id+'-owned').textContent=state.upgrades[id];
+      document.getElementById('u'+id+'-btn').disabled=state.coins<c;
+    }
+    document.getElementById('prestige-btn').style.display=state.coins>=10000?'inline-block':'none';
+    document.getElementById('prestige-badge').style.display=state.prestigeLevel>0?'inline-block':'none';
+    document.getElementById('prestige-level-badge').textContent=state.prestigeLevel;
+    document.getElementById('prestige-bonus').textContent=state.prestigeLevel*10;
+    document.getElementById('stat-clicks').textContent=formatNum(state.totalClicks);
+    document.getElementById('stat-total-coins').textContent=formatNum(state.totalCoins);
+    document.getElementById('stat-prestige').textContent=state.prestigeLevel;
+    document.getElementById('stat-playtime').textContent=formatTime(state.playedSeconds);
+  }
+
+  /* ── HELPERS ────────────────────────────────── */
+  function formatNum(n){
+    if(n>=1e9) return (n/1e9).toFixed(2)+'B';
+    if(n>=1e6) return (n/1e6).toFixed(2)+'M';
+    if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+    return Math.floor(n)+'';
+  }
+  function formatTime(s){
+    if(s<60) return s+'s';
+    if(s<3600) return Math.floor(s/60)+'m '+(s%60)+'s';
+    return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
+  }
+  function spawnFloat(x,y,text,lucky){
+    const el=document.createElement('div');
+    el.className='float-text'+(lucky?' lucky':'');
+    el.textContent=text; el.style.left=x+'px'; el.style.top=y+'px';
+    document.body.appendChild(el);
+    el.addEventListener('animationend',function(){el.remove();});
+  }
+  let toastTimer=null;
+  function showToast(msg){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},3000);
+  }
+
+  /* ── RESET ──────────────────────────────────── */
+  function resetGame(){
+    if(!confirm('Reset ALL progress?\nThis cannot be undone.')) return;
+    localStorage.removeItem(SAVE_KEY);
+    state=defaultState(); renderAchievements(); updateUI();
+  }
+
+  /* ── INIT ───────────────────────────────────── */
+  const btn=document.getElementById('click-btn');
+  btn.addEventListener('click',function(){
+    const r=this.getBoundingClientRect();
+    handleClick(r.left+r.width/2,r.top+r.height/3);
+  });
+  btn.addEventListener('touchend',function(e){
+    e.preventDefault();
+    const r=this.getBoundingClientRect();
+    handleClick(r.left+r.width/2,r.top+r.height/3);
+  },{passive:false});
+
+  loadGame(); renderAchievements(); updateUI(); scheduleBonus();
+  </script>
+</body>
+</html>

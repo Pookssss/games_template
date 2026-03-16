@@ -1,0 +1,802 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coin Clicker</title>
+  <style>
+    /* ═══════════════════════════════════════════
+       BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 60px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #f5c518;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       PRESTIGE BADGE
+    ═══════════════════════════════════════════ */
+    #prestige-badge {
+      display: none;
+      font-size: 0.8rem;
+      background: linear-gradient(135deg, #8e44ad, #3498db);
+      color: #fff;
+      border-radius: 20px;
+      padding: 3px 12px;
+      margin-bottom: 8px;
+    }
+
+    /* ═══════════════════════════════════════════
+       COIN COUNTER
+    ═══════════════════════════════════════════ */
+    #coin-display {
+      font-size: 1.5rem;
+      color: #ccc;
+      margin-bottom: 2px;
+    }
+    #coin-display span { color: #f5c518; font-weight: bold; }
+
+    #cps-display {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 24px;
+    }
+
+    /* ═══════════════════════════════════════════
+       COIN BUTTON
+    ═══════════════════════════════════════════ */
+    #click-btn {
+      position: relative;
+      width: clamp(130px, 25vw, 170px);
+      height: clamp(130px, 25vw, 170px);
+      border-radius: 50%;
+      border: none;
+      background: radial-gradient(circle at 35% 35%, #ffe066, #f5a623);
+      box-shadow: 0 6px 24px rgba(245,166,35,0.5);
+      font-size: clamp(2.8rem, 6vw, 3.5rem);
+      cursor: pointer;
+      transition: transform 0.08s, box-shadow 0.08s;
+      user-select: none;
+      animation: coinPulse 2.4s ease-in-out infinite;
+    }
+    #click-btn:hover {
+      box-shadow: 0 10px 36px rgba(245,166,35,0.8);
+      animation: none;
+      transform: scale(1.04);
+    }
+    #click-btn:active {
+      transform: scale(0.91) !important;
+      box-shadow: 0 3px 12px rgba(245,166,35,0.35);
+      animation: none;
+    }
+
+    @keyframes coinPulse {
+      0%,100% { box-shadow: 0 6px 24px rgba(245,166,35,0.5); }
+      50%      { box-shadow: 0 8px 40px rgba(245,166,35,0.85); }
+    }
+
+    #per-click-label {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    /* ═══════════════════════════════════════════
+       PRESTIGE BUTTON
+    ═══════════════════════════════════════════ */
+    #prestige-btn {
+      display: none;
+      margin-top: 10px;
+      padding: 8px 22px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #8e44ad, #2980b9);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      animation: glowPrestige 1.5s ease-in-out infinite;
+    }
+    #prestige-btn:hover { opacity: 0.85; transform: scale(1.04); }
+
+    @keyframes glowPrestige {
+      0%,100% { box-shadow: 0 0 8px #8e44ad88; }
+      50%      { box-shadow: 0 0 22px #8e44adcc; }
+    }
+
+    /* ═══════════════════════════════════════════
+       MAIN LAYOUT  (2 columns on wide screens)
+    ═══════════════════════════════════════════ */
+    #main-layout {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 24px;
+      width: 100%;
+      max-width: 860px;
+      margin-top: 28px;
+    }
+
+    .panel {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 14px;
+      padding: 18px 20px;
+      flex: 1 1 340px;
+      min-width: 280px;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #0f3460;
+      padding-bottom: 8px;
+    }
+
+    /* ═══════════════════════════════════════════
+       UPGRADE CARDS
+    ═══════════════════════════════════════════ */
+    .upgrade-card {
+      background: #0d1b36;
+      border: 1px solid #1a3a5c;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.2s, transform 0.12s;
+    }
+    .upgrade-card:hover { border-color: #2e6da4; }
+    .upgrade-card.purchased {
+      animation: purchasePop 0.35s ease-out;
+    }
+    @keyframes purchasePop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    .upgrade-info { flex: 1; }
+    .upgrade-info h3 { font-size: 0.95rem; color: #e0e0e0; margin-bottom: 2px; }
+    .upgrade-info p  { font-size: 0.78rem; color: #666; }
+    .upgrade-info .owned {
+      font-size: 0.75rem;
+      color: #5c8aff;
+      margin-top: 2px;
+    }
+
+    .buy-btn {
+      background: #0f3460;
+      color: #f5c518;
+      border: 1px solid #1a5276;
+      border-radius: 8px;
+      padding: 7px 13px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+      min-width: 72px;
+      text-align: center;
+    }
+    .buy-btn:hover:not(:disabled) { background: #1a5276; transform: scale(1.05); }
+    .buy-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ═══════════════════════════════════════════
+       STATS
+    ═══════════════════════════════════════════ */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 6px 0;
+      border-bottom: 1px solid #0f3460;
+      color: #aaa;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row span { color: #f5c518; font-weight: bold; }
+
+    /* ═══════════════════════════════════════════
+       ACHIEVEMENTS
+    ═══════════════════════════════════════════ */
+    #achievements-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ach-badge {
+      background: #0d1b36;
+      border: 1px solid #1a3a5c;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      color: #555;
+    }
+    .ach-badge.unlocked {
+      border-color: #f5c518;
+      color: #f5c518;
+      background: #1e2a10;
+    }
+
+    /* ═══════════════════════════════════════════
+       FLOATING TEXT
+    ═══════════════════════════════════════════ */
+    .float-text {
+      position: fixed;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #f5c518;
+      pointer-events: none;
+      animation: floatUp 0.9s ease-out forwards;
+      z-index: 200;
+      transform: translateX(-50%);
+    }
+    .float-text.lucky { color: #ff6cf5; font-size: 1.3rem; }
+
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-70px); }
+    }
+
+    /* ═══════════════════════════════════════════
+       ACHIEVEMENT TOAST
+    ═══════════════════════════════════════════ */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1e2a10;
+      border: 1px solid #f5c518;
+      color: #f5c518;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.88rem;
+      font-weight: bold;
+      z-index: 300;
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap;
+      max-width: 90vw;
+      text-align: center;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ═══════════════════════════════════════════
+       GOLDEN COIN
+    ═══════════════════════════════════════════ */
+    #golden-coin {
+      display: none;
+      position: fixed;
+      font-size: 2.6rem;
+      cursor: pointer;
+      z-index: 250;
+      animation: goldenBounce 0.7s ease-in-out infinite alternate,
+                 goldenGlow   1s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 8px #ffd700);
+      user-select: none;
+    }
+    @keyframes goldenBounce {
+      from { transform: translateY(0) rotate(-6deg); }
+      to   { transform: translateY(-12px) rotate(6deg); }
+    }
+    @keyframes goldenGlow {
+      from { filter: drop-shadow(0 0 6px #ffd700); }
+      to   { filter: drop-shadow(0 0 18px #ffec00); }
+    }
+    #golden-timer {
+      display: none;
+      position: fixed;
+      font-size: 0.72rem;
+      color: #ffd700;
+      z-index: 251;
+      pointer-events: none;
+      font-weight: bold;
+    }
+
+    /* ═══════════════════════════════════════════
+       RESET BUTTON
+    ═══════════════════════════════════════════ */
+    #reset-btn {
+      margin-top: 28px;
+      background: transparent;
+      border: 1px solid #333;
+      color: #444;
+      border-radius: 8px;
+      padding: 7px 20px;
+      font-size: 0.76rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #reset-btn:hover { color: #e74c3c; border-color: #e74c3c; }
+
+    /* ═══════════════════════════════════════════
+       BACK BUTTON
+    ═══════════════════════════════════════════ */
+    #back-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      background: #0f3460;
+      border: 1px solid #1a5276;
+      color: #f5c518;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+      z-index: 100;
+    }
+    #back-btn:hover { background: #1a5276; }
+
+    /* ═══════════════════════════════════════════
+       MOBILE
+    ═══════════════════════════════════════════ */
+    @media (max-width: 500px) {
+      h1 { font-size: 1.5rem; }
+      #coin-display { font-size: 1.2rem; }
+      .panel { padding: 14px 14px; }
+      .upgrade-info h3 { font-size: 0.88rem; }
+      .buy-btn { padding: 6px 10px; font-size: 0.78rem; }
+      #toast { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+
+  <a id="back-btn" href="../index.html">← Games</a>
+
+  <!-- HEADER -->
+  <h1>🪙 Coin Clicker</h1>
+  <div id="prestige-badge">✨ Prestige <span id="prestige-level-badge">1</span> — +<span id="prestige-bonus">10</span>% bonus</div>
+
+  <div id="coin-display">Coins: <span id="coins">0</span></div>
+  <div id="cps-display">Per second: <span id="cps">0</span> &nbsp;|&nbsp; Per click: <span id="per-click">1</span></div>
+
+  <!-- COIN BUTTON -->
+  <button id="click-btn" title="Click to earn coins!">🪙</button>
+  <div id="per-click-label">Tap the coin!</div>
+  <button id="prestige-btn" onclick="doPrestige()">✨ Prestige (resets, +10% bonus)</button>
+
+  <!-- MAIN PANELS -->
+  <div id="main-layout">
+
+    <!-- Upgrades -->
+    <div class="panel">
+      <div class="panel-title">🛒 Upgrades</div>
+
+      <div class="upgrade-card" id="card-1">
+        <div class="upgrade-info">
+          <h3>⚡ Power Click</h3>
+          <p>+1 coin per click</p>
+          <div class="owned">Owned: <span id="u1-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u1-btn" onclick="buyUpgrade(1)">🪙 <span id="u1-cost">10</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-2">
+        <div class="upgrade-info">
+          <h3>🤖 Auto Miner</h3>
+          <p>+1 coin per second</p>
+          <div class="owned">Owned: <span id="u2-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u2-btn" onclick="buyUpgrade(2)">🪙 <span id="u2-cost">25</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-3">
+        <div class="upgrade-info">
+          <h3>✌️ Double Click</h3>
+          <p>+2 coins per click</p>
+          <div class="owned">Owned: <span id="u3-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u3-btn" onclick="buyUpgrade(3)">🪙 <span id="u3-cost">50</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-4">
+        <div class="upgrade-info">
+          <h3>🚀 Super Miner</h3>
+          <p>+5 coins per second</p>
+          <div class="owned">Owned: <span id="u4-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u4-btn" onclick="buyUpgrade(4)">🪙 <span id="u4-cost">100</span></button>
+      </div>
+
+      <div class="upgrade-card" id="card-5">
+        <div class="upgrade-info">
+          <h3>🍀 Lucky Click</h3>
+          <p>10% chance for ×5 coins on click</p>
+          <div class="owned">Owned: <span id="u5-owned">0</span></div>
+        </div>
+        <button class="buy-btn" id="u5-btn" onclick="buyUpgrade(5)">🪙 <span id="u5-cost">200</span></button>
+      </div>
+    </div>
+
+    <!-- Stats + Achievements -->
+    <div style="display:flex;flex-direction:column;gap:24px;flex:1 1 280px;min-width:260px;">
+
+      <!-- Statistics -->
+      <div class="panel">
+        <div class="panel-title">📊 Statistics</div>
+        <div class="stat-row">Total Clicks <span id="stat-clicks">0</span></div>
+        <div class="stat-row">Total Coins Earned <span id="stat-total-coins">0</span></div>
+        <div class="stat-row">Play Time <span id="stat-playtime">0s</span></div>
+        <div class="stat-row">Prestige Level <span id="stat-prestige">0</span></div>
+      </div>
+
+      <!-- Achievements -->
+      <div class="panel">
+        <div class="panel-title">🏆 Achievements</div>
+        <div id="achievements-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <button id="reset-btn" onclick="resetGame()">Reset game</button>
+
+  <!-- Golden coin bonus event -->
+  <div id="golden-coin" onclick="claimGoldenCoin()">🌟</div>
+  <div id="golden-timer"></div>
+
+  <!-- Achievement / event toast -->
+  <div id="toast"></div>
+
+  <script>
+  /* ════════════════════════════════════════════════
+     SECTION 1 — GAME STATE
+  ════════════════════════════════════════════════ */
+  const UPGRADES_DEF = {
+    1: { baseCost: 10,  scale: 1.40 },
+    2: { baseCost: 25,  scale: 1.50 },
+    3: { baseCost: 50,  scale: 1.60 },
+    4: { baseCost: 100, scale: 1.70 },
+    5: { baseCost: 200, scale: 1.80 },
+  };
+
+  const ACHIEVEMENTS_DEF = [
+    { id: 'first_click',   label: '🖱️ First Click',        check: s => s.totalClicks >= 1              },
+    { id: 'clicks_100',    label: '💯 100 Clicks',          check: s => s.totalClicks >= 100            },
+    { id: 'coins_1000',    label: '💰 1,000 Coins Earned', check: s => s.totalCoins  >= 1000           },
+    { id: 'first_upgrade', label: '🛒 First Upgrade',       check: s => totalOwned(s) >= 1             },
+    { id: 'own_autominer', label: '🤖 Got Auto Miner',      check: s => s.upgrades[2] >= 1             },
+    { id: 'coins_10k',     label: '🏦 10K Coins Earned',    check: s => s.totalCoins  >= 10000         },
+    { id: 'prestige_1',    label: '✨ First Prestige',       check: s => s.prestigeLevel >= 1           },
+  ];
+
+  function defaultState() {
+    return {
+      coins:          0,
+      coinsPerClick:  1,
+      coinsPerSecond: 0,
+      upgrades:       { 1:0, 2:0, 3:0, 4:0, 5:0 },
+      totalClicks:    0,
+      totalCoins:     0,
+      prestigeLevel:  0,
+      achievements:   {},
+      playedSeconds:  0,
+    };
+  }
+
+  let state = defaultState();
+
+  /* ════════════════════════════════════════════════
+     SECTION 2 — STORAGE
+  ════════════════════════════════════════════════ */
+  function saveGame() {
+    localStorage.setItem('coinClickerV2', JSON.stringify(state));
+  }
+
+  function loadGame() {
+    try {
+      const saved = localStorage.getItem('coinClickerV2');
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      state = Object.assign(defaultState(), parsed);
+      for (let k = 1; k <= 5; k++) {
+        if (!state.upgrades[k]) state.upgrades[k] = 0;
+      }
+    } catch(e) { /* ignore corrupt data */ }
+  }
+
+  // Auto-save every 5 seconds
+  setInterval(saveGame, 5000);
+
+  /* ════════════════════════════════════════════════
+     SECTION 3 — GAME LOGIC
+  ════════════════════════════════════════════════ */
+  function upgradeCost(id) {
+    const def = UPGRADES_DEF[id];
+    return Math.floor(def.baseCost * Math.pow(def.scale, state.upgrades[id]));
+  }
+
+  function totalOwned(s) {
+    return Object.values(s.upgrades).reduce((a, b) => a + b, 0);
+  }
+
+  function prestigeMultiplier() {
+    return 1 + state.prestigeLevel * 0.10;
+  }
+
+  function handleClick(cx, cy) {
+    let earned = state.coinsPerClick;
+    const isLucky = state.upgrades[5] > 0 && Math.random() < 0.10;
+    if (isLucky) earned *= 5;
+    earned = Math.floor(earned * prestigeMultiplier());
+
+    state.coins       += earned;
+    state.totalCoins  += earned;
+    state.totalClicks += 1;
+
+    spawnFloat(cx, cy, '+' + formatNum(earned), isLucky);
+    checkAchievements();
+    updateUI();
+  }
+
+  function buyUpgrade(id) {
+    const cost = upgradeCost(id);
+    if (state.coins < cost) return;
+
+    state.coins -= cost;
+    state.upgrades[id]++;
+
+    if (id === 1) state.coinsPerClick  += 1;
+    if (id === 2) state.coinsPerSecond += 1;
+    if (id === 3) state.coinsPerClick  += 2;
+    if (id === 4) state.coinsPerSecond += 5;
+    // id 5 = Lucky Click — handled in handleClick
+
+    const card = document.getElementById('card-' + id);
+    card.classList.remove('purchased');
+    void card.offsetWidth;           // force reflow to restart animation
+    card.classList.add('purchased');
+
+    checkAchievements();
+    updateUI();
+    saveGame();
+  }
+
+  function doPrestige() {
+    if (state.coins < 10000) return;
+    if (!confirm('Prestige resets your coins and upgrades but grants a permanent +10% coin bonus.\n\nProceed?')) return;
+
+    state.prestigeLevel++;
+    state.coins          = 0;
+    state.coinsPerClick  = 1;
+    state.coinsPerSecond = 0;
+    state.upgrades       = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+
+    checkAchievements();
+    updateUI();
+    saveGame();
+    showToast('✨ Prestige ' + state.prestigeLevel + '! +' + (state.prestigeLevel * 10) + '% bonus active!');
+  }
+
+  /* ════════════════════════════════════════════════
+     SECTION 4 — AUTO-MINER TICK (1 s)
+  ════════════════════════════════════════════════ */
+  setInterval(function() {
+    state.playedSeconds++;
+    if (state.coinsPerSecond > 0) {
+      const earned = Math.floor(state.coinsPerSecond * prestigeMultiplier());
+      state.coins      += earned;
+      state.totalCoins += earned;
+    }
+    updateUI();
+  }, 1000);
+
+  /* ════════════════════════════════════════════════
+     SECTION 5 — ACHIEVEMENTS
+  ════════════════════════════════════════════════ */
+  function checkAchievements() {
+    ACHIEVEMENTS_DEF.forEach(function(def) {
+      if (!state.achievements[def.id] && def.check(state)) {
+        state.achievements[def.id] = true;
+        showToast('🏆 Achievement unlocked: ' + def.label);
+        renderAchievements();
+      }
+    });
+  }
+
+  function renderAchievements() {
+    const list = document.getElementById('achievements-list');
+    list.innerHTML = '';
+    ACHIEVEMENTS_DEF.forEach(function(def) {
+      const badge = document.createElement('div');
+      badge.className = 'ach-badge' + (state.achievements[def.id] ? ' unlocked' : '');
+      badge.textContent = def.label;
+      list.appendChild(badge);
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     SECTION 6 — BONUS EVENT (Golden Coin)
+  ════════════════════════════════════════════════ */
+  let goldenActive   = false;
+  let goldenTO       = null;
+  let goldenInterval = null;
+  let goldenSecs     = 5;
+
+  function scheduleGoldenCoin() {
+    const delay = (30 + Math.random() * 60) * 1000;   // 30–90 s
+    setTimeout(spawnGoldenCoin, delay);
+  }
+
+  function spawnGoldenCoin() {
+    if (goldenActive) return;
+    goldenActive = true;
+
+    const el = document.getElementById('golden-coin');
+    const tm = document.getElementById('golden-timer');
+    const margin = 70;
+    const x = margin + Math.random() * (window.innerWidth  - margin * 2);
+    const y = margin + Math.random() * (window.innerHeight - margin * 2);
+
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    tm.style.left = x + 'px';
+    tm.style.top  = (y + 58) + 'px';
+
+    goldenSecs = 5;
+    el.style.display = 'block';
+    tm.style.display = 'block';
+    tm.textContent   = '⏱ 5s';
+
+    goldenInterval = setInterval(function() {
+      goldenSecs--;
+      tm.textContent = '⏱ ' + goldenSecs + 's';
+      if (goldenSecs <= 0) hideGoldenCoin();
+    }, 1000);
+    goldenTO = setTimeout(hideGoldenCoin, 5500);
+  }
+
+  function claimGoldenCoin() {
+    if (!goldenActive) return;
+    clearTimeout(goldenTO);
+    clearInterval(goldenInterval);
+
+    const reward = Math.floor(100 * prestigeMultiplier());
+    state.coins      += reward;
+    state.totalCoins += reward;
+
+    const el   = document.getElementById('golden-coin');
+    const rect = el.getBoundingClientRect();
+    spawnFloat(rect.left + rect.width / 2, rect.top, '+' + reward + ' 🌟', true);
+
+    hideGoldenCoin(false);
+    showToast('🌟 Bonus! +' + reward + ' coins!');
+    updateUI();
+    saveGame();
+  }
+
+  function hideGoldenCoin(reschedule) {
+    clearTimeout(goldenTO);
+    clearInterval(goldenInterval);
+    document.getElementById('golden-coin').style.display  = 'none';
+    document.getElementById('golden-timer').style.display = 'none';
+    goldenActive = false;
+    if (reschedule !== false) scheduleGoldenCoin();
+    else scheduleGoldenCoin();
+  }
+
+  /* ════════════════════════════════════════════════
+     SECTION 7 — UI RENDERING
+  ════════════════════════════════════════════════ */
+  function updateUI() {
+    document.getElementById('coins').textContent     = formatNum(Math.floor(state.coins));
+    document.getElementById('per-click').textContent = state.coinsPerClick;
+    document.getElementById('cps').textContent       = state.coinsPerSecond;
+
+    for (let id = 1; id <= 5; id++) {
+      const cost = upgradeCost(id);
+      document.getElementById('u' + id + '-cost').textContent  = formatNum(cost);
+      document.getElementById('u' + id + '-owned').textContent = state.upgrades[id];
+      document.getElementById('u' + id + '-btn').disabled      = state.coins < cost;
+    }
+
+    // Prestige
+    document.getElementById('prestige-btn').style.display  = state.coins >= 10000 ? 'inline-block' : 'none';
+    document.getElementById('prestige-badge').style.display = state.prestigeLevel > 0 ? 'inline-block' : 'none';
+    document.getElementById('prestige-level-badge').textContent = state.prestigeLevel;
+    document.getElementById('prestige-bonus').textContent       = state.prestigeLevel * 10;
+
+    // Stats
+    document.getElementById('stat-clicks').textContent      = formatNum(state.totalClicks);
+    document.getElementById('stat-total-coins').textContent = formatNum(state.totalCoins);
+    document.getElementById('stat-prestige').textContent    = state.prestigeLevel;
+    document.getElementById('stat-playtime').textContent    = formatTime(state.playedSeconds);
+  }
+
+  /* ════════════════════════════════════════════════
+     SECTION 8 — HELPERS
+  ════════════════════════════════════════════════ */
+  function formatNum(n) {
+    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
+    if (n >= 1_000_000)     return (n / 1_000_000).toFixed(2) + 'M';
+    if (n >= 1_000)         return (n / 1_000).toFixed(1) + 'K';
+    return Math.floor(n).toString();
+  }
+
+  function formatTime(s) {
+    if (s < 60)   return s + 's';
+    if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+    return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+  }
+
+  function spawnFloat(x, y, text, lucky) {
+    const el = document.createElement('div');
+    el.className   = 'float-text' + (lucky ? ' lucky' : '');
+    el.textContent = text;
+    el.style.left  = x + 'px';
+    el.style.top   = y + 'px';
+    document.body.appendChild(el);
+    el.addEventListener('animationend', function() { el.remove(); });
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 3000);
+  }
+
+  /* ════════════════════════════════════════════════
+     SECTION 9 — RESET
+  ════════════════════════════════════════════════ */
+  function resetGame() {
+    if (!confirm('Reset ALL progress including achievements and prestige?\nThis cannot be undone.')) return;
+    localStorage.removeItem('coinClickerV2');
+    state = defaultState();
+    renderAchievements();
+    updateUI();
+  }
+
+  /* ════════════════════════════════════════════════
+     SECTION 10 — EVENT LISTENERS & INIT
+  ════════════════════════════════════════════════ */
+  const btn = document.getElementById('click-btn');
+
+  btn.addEventListener('click', function() {
+    const rect = this.getBoundingClientRect();
+    handleClick(rect.left + rect.width / 2, rect.top + rect.height / 3);
+  });
+
+  btn.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    const rect = this.getBoundingClientRect();
+    handleClick(rect.left + rect.width / 2, rect.top + rect.height / 3);
+  }, { passive: false });
+
+  // INIT
+  loadGame();
+  renderAchievements();
+  updateUI();
+  scheduleGoldenCoin();
+  </script>
+</body>
+</html>
