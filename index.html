@@ -136,6 +136,14 @@
       }
       .card-ai:hover { box-shadow: 0 14px 44px rgba(116,242,206,0.28); }
 
+      /* ── Card: Monkey Shooter ──────── */
+      .card-monkey {
+        background: linear-gradient(145deg, #101c2b 0%, #0c1522 100%);
+        box-shadow: 0 6px 28px rgba(138, 180, 248, 0.12);
+        --card-glow: radial-gradient(circle at 50% 0%, rgba(138, 180, 248, 0.1), transparent 60%);
+      }
+      .card-monkey:hover { box-shadow: 0 14px 44px rgba(138, 180, 248, 0.28); }
+
       /* ── Icon ─────────────────────── */
       .card-icon {
         font-size: 3rem;
@@ -158,6 +166,7 @@
       }
       .card-coin .card-name { color: #f5c518; }
       .card-ai   .card-name { color: #74f2ce; }
+      .card-monkey .card-name { color: #8ab4f8; }
 
       .card-hook {
         font-size: 0.8rem;
@@ -170,6 +179,7 @@
       }
       .card-coin .card-hook { background: rgba(245,197,24,0.1); color: #f5c518; }
       .card-ai   .card-hook { background: rgba(116,242,206,0.1); color: #74f2ce; }
+      .card-monkey .card-hook { background: rgba(138, 180, 248, 0.1); color: #8ab4f8; }
 
       .card-desc {
         font-size: 0.87rem;
@@ -195,6 +205,7 @@
       }
       .card-coin .tag { color: #c9a010; border-color: #3a3020; background: #1a1508; }
       .card-ai   .tag { color: #4fb89a; border-color: #1a4455; background: #061620; }
+      .card-monkey .tag { color: #8ab4f8; border-color: #2b3d5c; background: #0c1522; }
 
       /* ── Play button ──────────────── */
       .play-btn {
@@ -217,6 +228,7 @@
       .play-btn:hover { filter: brightness(1.12); transform: scale(1.02); }
       .card-coin .play-btn { background: #f5c518; color: #1a1208; }
       .card-ai   .play-btn { background: #74f2ce; color: #04141e; }
+      .card-monkey .play-btn { background: #8ab4f8; color: #0a111a; }
 
       /* ── Footer ───────────────────── */
       footer {
@@ -272,6 +284,20 @@
           <span class="tag">⚡ Reaction</span>
           <span class="tag">10 วินาที</span>
           <span class="tag">Combo</span>
+        </div>
+        <span class="play-btn">▶ เล่นเลย</span>
+      </a>
+
+      <!-- Monkey Shooter -->
+      <a class="card card-monkey" href="Monkey-Shooter/index.html">
+        <div class="card-icon">🐒</div>
+        <div class="card-hook">Auto Shooter · Relax</div>
+        <div class="card-name">Monkey Shooter</div>
+        <p class="card-desc">บังคับน้องลิงยิงลูกโป่ง ลากเพื่อเลื่อนซ้ายขวา ฉากเลื่อนอัตโนมัติ พร้อมดนตรีกล่อมนอนสบายๆ</p>
+        <div class="card-tags">
+          <span class="tag">🐒 Cute</span>
+          <span class="tag">Upgrades</span>
+          <span class="tag">Chill</span>
         </div>
         <span class="play-btn">▶ เล่นเลย</span>
       </a>
