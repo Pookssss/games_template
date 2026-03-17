@@ -206,7 +206,63 @@
     }
     @keyframes pulse { from { opacity: 0.2; } to { opacity: 0.6; } }
 
-  </style>
+    /* ═══════════════════════════════════════════
+       EXP & LEVEL UI
+    ═══════════════════════════════════════════ */
+    #level-area {
+      position: absolute;
+      top: 14px; left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      width: 120px;
+    }
+    #level-text {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: var(--teal);
+      margin-bottom: 4px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    #exp-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    #exp-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #74f2ce, #f5c518);
+      transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    /* ═══════════════════════════════════════════
+       BOSS & EVENT WARNING
+    ═══════════════════════════════════════════ */
+    #warning-msg {
+      position: absolute;
+      top: 30%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #ff4757;
+      text-shadow: 0 0 15px rgba(255, 71, 87, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s;
+      white-space: nowrap;
+    }
+    #warning-msg.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      animation: warnPulse 1s infinite alternate;
+    }
+    @keyframes warnPulse {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      100% { transform: translate(-50%, -50%) scale(1.1); text-shadow: 0 0 25px rgba(255, 71, 87, 1); }
+    }  </style>
 </head>
 <body>
 
@@ -214,9 +270,16 @@
 
   <div id="ui-layer">
     <a id="back-btn" class="hud-element" href="../index.html">← Games</a>
+
+    <div id="level-area" class="hud-element">
+      <div id="level-text">Level <span id="lv-num">1</span></div>
+      <div id="exp-bar-bg"><div id="exp-bar-fill"></div></div>
+    </div>
+
     <div id="coin-display" class="hud-element">🍌 <span id="coins">0</span></div>
     
     <div class="idle-hint" id="start-hint">Drag monkey to move & shoot!</div>
+    <div id="warning-msg">⚠️ BOSS APPROACHING ⚠️</div>
 
     <div id="controls-area" class="hud-element">
       <button id="music-btn" class="hud-btn muted" onclick="toggleMusic()">🔇 Music</button>
@@ -267,13 +330,22 @@
 ════════════════════════════════════════════════ */
 const DEF_STATE = {
   coins: 0,
+  level: 1,
+  exp: 0,
   upgrades: { dmg: 1, spd: 1, multi: 0 }
 };
+
 let state = JSON.parse(localStorage.getItem('monkeyShooterSave')) || DEF_STATE;
+// Migrate old saves
+if (state.level === undefined) { state.level = 1; state.exp = 0; }
 
 function saveGame() {
   localStorage.setItem('monkeyShooterSave', JSON.stringify(state));
   updateUI();
+}
+
+function getExpReq(lvl) {
+  return lvl * 15; // 15, 30, 45, 60... EXP per level
 }
 
 function getCost(type) {
@@ -300,6 +372,11 @@ function buyUpgrade(type) {
 
 function updateUI() {
   document.getElementById('coins').textContent = Math.floor(state.coins);
+  document.getElementById('lv-num').textContent = state.level;
+  
+  const expReq = getExpReq(state.level);
+  const pct = Math.min(100, (state.exp / expReq) * 100);
+  document.getElementById('exp-bar-fill').style.width = pct + '%';
   
   const dCost = getCost('dmg');
   document.getElementById('u-dmg-lv').textContent = state.upgrades.dmg;
@@ -334,12 +411,18 @@ const GAME = {
   player: { x: W/2, y: H - 150, size: 40, emoji: '🐒' },
   bullets: [],
   enemies: [],
-  drops: [],      // New: collectables (coins/powerups)
+  drops: [],
   particles: [],
-  powerup: { type: null, time: 0 }, // Active powerup
+  powerup: { type: null, time: 0 },
   stars: [],
   lastShot: 0,
-  scoreTexts: []
+  scoreTexts: [],
+  
+  // New systems
+  state: 'PLAYING',         // PLAYING, WARNING, BOSS
+  modeTimer: 0,             // Time until next phase
+  nextEventTime: 30 + Math.random() * 30, // 30-60s
+  bossData: { maxHp: 0 }
 };
 
 // Init flowing background stars
@@ -392,6 +475,11 @@ function update(dt, time) {
   if (GAME.player.y < 20) GAME.player.y = 20;
   if (GAME.player.y > H - 20) GAME.player.y = H - 20;
 
+  // Calculate difficulty globally for this frame
+  let totalUpgrades = (state.upgrades.dmg - 1) + (state.upgrades.spd - 1) + state.upgrades.multi;
+  let difficultyMult = 1 + (totalUpgrades * 0.15);
+  let baseSpawnRate = 0.03;
+
   // Auto Shoot (Faster base fire rate)
   let fireInterval = Math.max(0.08, 0.25 - (state.upgrades.spd * 0.015)); 
   if (GAME.powerup.type === 'spd' && GAME.powerup.time > 0) fireInterval /= 2;
@@ -414,22 +502,38 @@ function update(dt, time) {
     if (b.y < -50) GAME.bullets.splice(i, 1);
   }
 
-  // Spawn Enemies (Lower HP)
-  if (Math.random() < 0.03 + (state.upgrades.dmg * 0.001)) { 
+  // Mode Handling
+  if (GAME.state === 'WARNING') {
+    GAME.modeTimer -= dt;
+    if (GAME.modeTimer <= 0) {
+      spawnBoss();
+      document.getElementById('warning-msg').classList.remove('show');
+    }
+    // minimal enemy spawn during warning
+    if (Math.random() < 0.01) spawnNormalEnemy(difficultyMult, totalUpgrades);
+  } else if (GAME.state === 'PLAYING') {
+    GAME.nextEventTime -= dt;
+    if (GAME.nextEventTime <= 0) triggerRandomEvent();
+    
+    // Normal Spawn
+    let spawnChance = baseSpawnRate * (1 + (totalUpgrades * 0.1));
+    if (Math.random() < spawnChance) spawnNormalEnemy(difficultyMult, totalUpgrades);
+  }
+
+  // --- Helpers for Spawning ---
+  function spawnNormalEnemy(diff, upg) {
     const types = [
-      { e: '🎈', hp: 1 + state.upgrades.dmg * 0.2, v: 80, s: 35 },
-      { e: '☁️', hp: 2 + state.upgrades.dmg * 0.6, v: 50, s: 50 },
-      { e: '🛸', hp: 4 + state.upgrades.dmg * 1.0, v: 120, s: 40 }
+      { e: '🎈', hp: 1 + Math.floor(diff * 1.5), v: 80 * (1 + upg*0.05), s: 35 },
+      { e: '☁️', hp: 2 + Math.floor(diff * 2.5), v: 50 * (1 + upg*0.05), s: 50 },
+      { e: '🛸', hp: 4 + Math.floor(diff * 4.0), v: 120 * (1 + upg*0.05), s: 40 }
     ];
     let type = types[Math.floor(Math.random() * types.length)];
-    // Boss chance
-    if (Math.random() < 0.05) { type = { e: '👾', hp: 20 + state.upgrades.dmg * 2, v: 30, s: 80 }; }
+    if (Math.random() < 0.05) type = { e: '👾', hp: 15 + Math.floor(diff * 8), v: 30 * (1 + upg*0.02), s: 80 };
 
     GAME.enemies.push({
-      x: Math.random() * (W - 60) + 30,
-      y: -50,
-      vx: (Math.random() - 0.5) * 40,
-      hp: type.hp, maxHp: type.hp,
+      x: Math.random() * (W - 60) + 30, y: -50,
+      vx: (Math.random() - 0.5) * 40 * diff,
+      hp: type.hp, maxHp: type.hp, isBoss: false,
       emoji: type.e, speed: type.v, size: type.s,
       wobble: Math.random() * Math.PI * 2
     });
@@ -456,27 +560,63 @@ function update(dt, time) {
         if (!_muted) playHitSound();
 
         if (e.hp <= 0) {
-          // Kill
-          let val = Math.ceil(e.maxHp * 0.5);
-          // Spawn Drop instead of auto-collect
-          let isPowerup = Math.random() < 0.08; 
-          let pType = null;
-          if (isPowerup) {
-            const pts = ['spd', 'bomb', 'multi'];
-            pType = pts[Math.floor(Math.random() * pts.length)];
-          }
-          GAME.drops.push({
-            x: e.x, y: e.y,
-            type: isPowerup ? 'powerup' : 'banana',
-            val: val,
-            pType: pType,
-            vx: (Math.random() - 0.5) * 100,
-            vy: -100 - Math.random() * 50
-          });
+          if (e.isBoss) {
+            // Boss Defeated!
+            GAME.state = 'PLAYING';
+            spawnScoreText(W/2, H/2, 'BOSS DEFEATED!');
+            spawnParticles(e.x, e.y, '#f5c518', 40);
+            for(let k=0; k<15; k++) {
+              GAME.drops.push({
+                x: e.x + (Math.random()-0.5)*100, y: e.y + (Math.random()-0.5)*100,
+                type: 'banana', val: 50, pType: null,
+                vx: (Math.random() - 0.5) * 300, vy: -200 - Math.random() * 200
+              });
+            }
+            if (!_muted) playKillSound();
+            GAME.nextEventTime = 30 + Math.random() * 30; // reset event timer
+          } else {
+            // Normal Kill
+            let val = Math.ceil(e.maxHp * 0.5);
+            
+            // Gain EXP
+            state.exp++;
+            let expReq = getExpReq(state.level);
+            if (state.exp >= expReq) {
+              state.level++;
+              state.exp -= expReq;
+              spawnScoreText(GAME.player.x, GAME.player.y - 50, 'LEVEL UP!');
+              spawnParticles(GAME.player.x, GAME.player.y, '#74f2ce', 15);
+              if (!_muted) playSoftUpgrade();
+              
+              updateUI();
+              
+              // Check Boss
+              if (state.level % 5 === 0) {
+                triggerBossWarning();
+              }
+            }
+            
+            // Spawn Drop instead of auto-collect
+            let isPowerup = Math.random() < 0.08; 
+            let pType = null;
+            if (isPowerup) {
+              const pts = ['spd', 'bomb', 'multi'];
+              pType = pts[Math.floor(Math.random() * pts.length)];
+            }
+            GAME.drops.push({
+              x: e.x, y: e.y,
+              type: isPowerup ? 'powerup' : 'banana',
+              val: val,
+              pType: pType,
+              vx: (Math.random() - 0.5) * 100,
+              vy: -100 - Math.random() * 50
+            });
 
-          spawnParticles(e.x, e.y, '#74f2ce', 8);
+            spawnParticles(e.x, e.y, '#74f2ce', 8);
+            if (!_muted) playKillSound();
+          }
+          
           GAME.enemies.splice(i, 1);
-          if (!_muted) playKillSound();
           break; // enemy dead, stop bullet loop
         }
       }
@@ -553,6 +693,50 @@ function update(dt, time) {
   }
 }
 
+function triggerBossWarning() {
+  GAME.state = 'WARNING';
+  GAME.modeTimer = 4.0; // 4 seconds warning
+  document.getElementById('warning-msg').classList.add('show');
+  spawnScoreText(W/2, H/2, 'BOSS INCOMING!');
+}
+
+function spawnBoss() {
+  GAME.state = 'BOSS';
+  let bossHp = state.level * 150; // Scaling Boss HP
+  let emojis = ['🦍', '🐲', '🌋', '🛸', '🦖'];
+  GAME.enemies.push({
+    x: W/2, y: -100,
+    vx: 0,
+    hp: bossHp, maxHp: bossHp, isBoss: true,
+    emoji: emojis[(state.level/5 - 1) % emojis.length] || '🦍',
+    speed: 15, size: 120, // Slow but huge
+    wobble: 0
+  });
+}
+
+function triggerRandomEvent() {
+  GAME.nextEventTime = 40 + Math.random() * 40; // Next event in 40-80s
+  const events = ['BANANA_RAIN', 'FRENZY'];
+  let ev = events[Math.floor(Math.random() * events.length)];
+  
+  if (ev === 'BANANA_RAIN') {
+    spawnScoreText(W/2, H/3, 'BANANA RAIN!');
+    for(let i=0; i<30; i++) {
+      setTimeout(() => {
+        GAME.drops.push({
+          x: Math.random() * W, y: -20,
+          type: 'banana', val: 5 * state.level, pType: null,
+          vx: (Math.random()-0.5) * 50, vy: 100 + Math.random() * 150
+        });
+      }, i * 200);
+    }
+  } else if (ev === 'FRENZY') {
+    spawnScoreText(W/2, H/3, 'FRENZY MODE!');
+    GAME.powerup.type = 'spd';
+    GAME.powerup.time = 8.0; // 8 seconds of frenzy
+  }
+}
+
 function shoot() {
   let m = state.upgrades.multi; // 0, 1, 2, 3, 4
   if (GAME.powerup.type === 'multi') m += 2;
@@ -598,11 +782,13 @@ function draw() {
   ctx.textBaseline = 'middle';
 
   // Bullets
+  ctx.fillStyle = '#ffffff'; // Fallback
   ctx.font = '24px Arial';
   GAME.bullets.forEach(b => { ctx.fillText('🍌', b.x, b.y); });
 
   // Drops
   GAME.drops.forEach(d => {
+    ctx.fillStyle = '#ffffff';
     if (d.type === 'banana') {
       ctx.font = '20px Arial';
       ctx.fillText('🍌', d.x, d.y);
@@ -616,21 +802,36 @@ function draw() {
     }
   });
 
-  // Enemies
+  // Enemies & Boss
   GAME.enemies.forEach(e => {
-    ctx.font = e.size + 'px Arial';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = Math.floor(e.size) + 'px Arial';
     ctx.fillText(e.emoji, e.x, e.y);
+    
     // HP bar
     if (e.hp < e.maxHp) {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(e.x - 15, e.y - e.size/2 - 10, 30, 4);
-      ctx.fillStyle = '#74f2ce';
-      ctx.fillRect(e.x - 15, e.y - e.size/2 - 10, 30 * (e.hp/e.maxHp), 4);
+      if (e.isBoss) {
+        // Boss HP Bar (Top of screen)
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(W/2 - 150, 60, 300, 12);
+        ctx.fillStyle = '#ff4757';
+        ctx.fillRect(W/2 - 150, 60, 300 * (Math.max(0, e.hp)/e.maxHp), 12);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Arial';
+        ctx.fillText('BOSS', W/2, 66);
+      } else {
+        // Normal HP Bar
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(e.x - 15, e.y - e.size/2 - 10, 30, 4);
+        ctx.fillStyle = '#74f2ce';
+        ctx.fillRect(e.x - 15, e.y - e.size/2 - 10, 30 * (e.hp/e.maxHp), 4);
+      }
     }
   });
 
   // Player (Monkey)
-  ctx.font = GAME.player.size + 'px Arial';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = Math.floor(GAME.player.size) + 'px Arial';
   ctx.fillText(GAME.player.emoji, GAME.player.x, GAME.player.y);
   
   // Aura under player
