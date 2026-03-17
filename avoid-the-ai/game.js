@@ -1,4 +1,6 @@
-const GAME_DURATION_MS = 10000;
+const BASE_DURATION_MS = 10000;
+const ADD_TIME_MS = 5000;
+const MAX_DURATION_MS = 60000;
 const BASE_POINTS = 10;
 const COMBO_WINDOW_MS = 1000;
 const BEST_SCORE_KEY = "avoid-the-ai-best-score";
@@ -28,14 +30,25 @@ const elements = {
   bestScoreValue: document.getElementById("bestScoreValue"),
   startButton: document.getElementById("startButton"),
   restartButton: document.getElementById("restartButton"),
-  shareButton: document.getElementById("shareButton")
+  addTimeButton: document.getElementById("addTimeButton"),
+  shareButton: document.getElementById("shareButton"),
+  // Score modal
+  scoreModal: document.getElementById("scoreModal"),
+  modalScore: document.getElementById("modalScore"),
+  modalBest: document.getElementById("modalBest"),
+  modalCombo: document.getElementById("modalCombo"),
+  modalNewRecord: document.getElementById("modalNewRecord"),
+  modalPlayAgain: document.getElementById("modalPlayAgain"),
+  modalShare: document.getElementById("modalShare")
 };
 
 const state = {
   running: false,
   score: 0,
   combo: 1,
+  peakCombo: 1,
   bestScore: Number(localStorage.getItem(BEST_SCORE_KEY)) || 0,
+  gameDurationMs: BASE_DURATION_MS,
   endTime: 0,
   lastFrameTime: 0,
   lastHitTime: 0,
@@ -218,7 +231,7 @@ function updateBestScore() {
   elements.bestScoreValue.textContent = String(state.bestScore);
 }
 
-function updateHud(timeRemainingMs = GAME_DURATION_MS) {
+function updateHud(timeRemainingMs = state.gameDurationMs) {
   elements.scoreValue.textContent = String(state.score);
   elements.timeValue.textContent = `${Math.max(0, timeRemainingMs / 1000).toFixed(1)}s`;
   elements.comboValue.textContent = `x${state.combo}`;
@@ -250,7 +263,8 @@ function refreshButtonSize() {
 }
 
 function positionAiButton() {
-  elements.aiButton.style.transform = `translate3d(${state.ai.x}px, ${state.ai.y}px, 0)`;
+  elements.aiButton.style.left = `${state.ai.x}px`;
+  elements.aiButton.style.top = `${state.ai.y}px`;
 }
 
 function pickTargetPosition(preferredX = null, preferredY = null) {
@@ -364,25 +378,38 @@ function placeAiAtCenter() {
   positionAiButton();
 }
 
+function placeAiAtRandom() {
+  const bounds = getArenaBounds();
+  refreshButtonSize();
+  state.ai.x = randomBetween(0, bounds.width - state.ai.width);
+  state.ai.y = randomBetween(0, bounds.height - state.ai.height);
+  state.ai.targetX = state.ai.x;
+  state.ai.targetY = state.ai.y;
+  positionAiButton();
+}
+
 function startGame() {
   audio.playStart();
   refreshButtonSize();
   state.running = true;
   state.score = 0;
   state.combo = 1;
+  state.peakCombo = 1;
   state.lastHitTime = 0;
   state.lastEscapeTime = 0;
   state.lastTauntTime = 0;
-  state.endTime = performance.now() + GAME_DURATION_MS;
+  state.endTime = performance.now() + state.gameDurationMs;
   state.lastFrameTime = performance.now();
   elements.aiButton.classList.remove("hidden");
   elements.restartButton.disabled = false;
   elements.shareButton.disabled = true;
+  elements.addTimeButton.disabled = true;
+  hideScoreModal();
   hideOverlay();
   setGameplayPresentation(true);
-  placeAiAtCenter();
+  placeAiAtRandom();
   pickTargetPosition();
-  updateHud(GAME_DURATION_MS);
+  updateHud(state.gameDurationMs);
   setToast("Catch the AI before it predicts you.");
   cancelAnimationFrame(state.rafId);
   state.rafId = requestAnimationFrame(gameLoop);
@@ -392,11 +419,13 @@ function endGame() {
   state.running = false;
   cancelAnimationFrame(state.rafId);
   elements.shareButton.disabled = false;
+  elements.addTimeButton.disabled = false;
   audio.playEnd();
+  const isNewRecord = state.score > state.bestScore;
   updateBestScore();
   updateHud(0);
-  setToast(`Time up. Final score: ${state.score}`);
-  showOverlay("Run Complete", `Final score: ${state.score}. Best score: ${state.bestScore}. Try to beat the smarter AI.`);
+  setToast(`Time up! Final score: ${state.score}`);
+  showScoreModal(isNewRecord);
 }
 
 function handleAiCaught(event) {
@@ -410,6 +439,7 @@ function handleAiCaught(event) {
   const now = performance.now();
   state.combo = state.lastHitTime && now - state.lastHitTime <= COMBO_WINDOW_MS ? clamp(state.combo + 1, 1, 3) : 1;
   state.lastHitTime = now;
+  if (state.combo > state.peakCombo) state.peakCombo = state.combo;
 
   const points = BASE_POINTS * state.combo;
   state.score += points;
@@ -430,6 +460,32 @@ function handleAiCaught(event) {
   audio.playCatch();
 
   pickTargetPosition();
+}
+
+function showScoreModal(isNewRecord) {
+  elements.modalScore.textContent = String(state.score);
+  elements.modalBest.textContent = String(state.bestScore);
+  elements.modalCombo.textContent = `x${state.peakCombo}`;
+  elements.modalNewRecord.classList.toggle("hidden", !isNewRecord);
+  elements.scoreModal.classList.remove("hidden");
+  elements.scoreModal.classList.add("entering");
+  window.setTimeout(() => elements.scoreModal.classList.remove("entering"), 10);
+}
+
+function hideScoreModal() {
+  elements.scoreModal.classList.add("hidden");
+}
+
+function handleAddTime() {
+  if (state.running) return;
+  state.gameDurationMs = Math.min(state.gameDurationMs + ADD_TIME_MS, MAX_DURATION_MS);
+  updateHud(state.gameDurationMs);
+  setToast(`Game time set to ${state.gameDurationMs / 1000}s.`);
+  elements.addTimeButton.textContent = "+5s ✓";
+  window.setTimeout(() => { elements.addTimeButton.textContent = "+5s"; }, 600);
+  if (state.gameDurationMs >= MAX_DURATION_MS) {
+    elements.addTimeButton.disabled = true;
+  }
 }
 
 function gameLoop(now) {
@@ -474,42 +530,150 @@ function gameLoop(now) {
   state.rafId = requestAnimationFrame(gameLoop);
 }
 
+function buildScoreCardCanvas() {
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const W = 540;
+  const H = 320;
+  const canvas = document.createElement("canvas");
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+
+  const ctx = canvas.getContext("2d");
+  ctx.scale(DPR, DPR);
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#07101c");
+  bg.addColorStop(1, "#0b1f35");
+  ctx.fillStyle = bg;
+  ctx.roundRect(0, 0, W, H, 24);
+  ctx.fill();
+
+  // Teal glow blob top-right
+  const glow = ctx.createRadialGradient(W * 0.82, H * 0.12, 0, W * 0.82, H * 0.12, 180);
+  glow.addColorStop(0, "rgba(116,242,206,0.18)");
+  glow.addColorStop(1, "rgba(116,242,206,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Border
+  ctx.strokeStyle = "rgba(116,242,206,0.28)";
+  ctx.lineWidth = 1.5;
+  ctx.roundRect(1, 1, W - 2, H - 2, 23);
+  ctx.stroke();
+
+  // Eyebrow
+  ctx.fillStyle = "#74f2ce";
+  ctx.font = "700 11px 'Trebuchet MS', sans-serif";
+  ctx.letterSpacing = "0.24em";
+  ctx.fillText("REACTION CHALLENGE", 36, 52);
+
+  // Title
+  ctx.fillStyle = "#ecf7ff";
+  ctx.font = "700 38px Impact, 'Arial Narrow Bold', sans-serif";
+  ctx.letterSpacing = "0.06em";
+  ctx.fillText("AVOID THE AI", 36, 100);
+
+  // Stat tiles
+  const tiles = [
+    { label: "SCORE", value: String(state.score), accent: false },
+    { label: "BEST", value: String(state.bestScore), accent: true },
+    { label: "COMBO PEAK", value: `x${state.peakCombo}`, accent: false }
+  ];
+  const tileW = 140;
+  const tileH = 80;
+  const tileY = 136;
+  const tileGap = 16;
+  const startX = 36;
+
+  tiles.forEach((tile, i) => {
+    const tx = startX + i * (tileW + tileGap);
+
+    // Tile bg
+    ctx.fillStyle = tile.accent ? "rgba(116,242,206,0.1)" : "rgba(12,34,60,0.8)";
+    ctx.strokeStyle = tile.accent ? "rgba(116,242,206,0.3)" : "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(tx, tileY, tileW, tileH, 14);
+    ctx.fill();
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = "#9bbacf";
+    ctx.font = "600 10px 'Trebuchet MS', sans-serif";
+    ctx.letterSpacing = "0.14em";
+    ctx.fillText(tile.label, tx + 14, tileY + 22);
+
+    // Value
+    ctx.fillStyle = tile.accent ? "#74f2ce" : "#ecf7ff";
+    ctx.font = `700 ${tile.value.length > 4 ? "22" : "28"}px 'Trebuchet MS', sans-serif`;
+    ctx.letterSpacing = "0";
+    ctx.fillText(tile.value, tx + 14, tileY + 60);
+  });
+
+  // Tagline
+  ctx.fillStyle = "#9bbacf";
+  ctx.font = "14px 'Trebuchet MS', sans-serif";
+  ctx.letterSpacing = "0";
+  ctx.fillText("Can you beat me? 🎮", 36, H - 28);
+
+  return canvas;
+}
+
 async function shareScore() {
-  const shareText = `I scored ${state.score} in Avoid The AI! Can you beat me?`;
+  setToast("Generating score card…");
 
   try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(shareText);
-    } else {
-      const helper = document.createElement("textarea");
-      helper.value = shareText;
-      helper.setAttribute("readonly", "true");
-      helper.style.position = "absolute";
-      helper.style.left = "-9999px";
-      document.body.appendChild(helper);
-      helper.select();
-      document.execCommand("copy");
-      helper.remove();
+    const canvas = buildScoreCardCanvas();
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    const file = new File([blob], "avoid-the-ai-score.png", { type: "image/png" });
+
+    // Web Share API with file (supported on mobile Chrome/Safari, desktop Chrome)
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "Avoid The AI",
+        text: `I scored ${state.score} in Avoid The AI! Can you beat me?`
+      });
+      setToast("Shared successfully!");
+      return;
     }
 
-    setToast("Score copied to clipboard.");
+    // Fallback: download the image
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "avoid-the-ai-score.png";
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setToast("Score card saved as PNG — share it anywhere!");
   } catch (error) {
-    setToast("Clipboard is unavailable in this browser context.");
+    if (error.name !== "AbortError") {
+      setToast("Could not generate score card.");
+    } else {
+      setToast("Share cancelled.");
+    }
   }
 }
+
 
 function resetForIdle() {
   state.running = false;
   state.score = 0;
   state.combo = 1;
+  state.peakCombo = 1;
   state.pointerActive = false;
+  state.gameDurationMs = BASE_DURATION_MS;
   elements.aiButton.classList.add("hidden");
   elements.shareButton.disabled = true;
+  elements.addTimeButton.disabled = false;
+  elements.addTimeButton.textContent = "+5s";
   setGameplayPresentation(false);
   updateBestScore();
-  updateHud(GAME_DURATION_MS);
+  updateHud(state.gameDurationMs);
   placeAiAtCenter();
-  showOverlay("Avoid The AI", "The AI will dodge your cursor. Catch it as many times as you can in 10 seconds.");
+  showOverlay("Avoid The AI", `The AI will dodge your cursor. Catch it as many times as you can in ${state.gameDurationMs / 1000} seconds.`);
   setToast("Press Start Game to begin.");
 }
 
@@ -526,9 +690,12 @@ async function handleStartRequest() {
 
 elements.startButton.addEventListener("click", handleStartRequest);
 elements.restartButton.addEventListener("click", handleStartRequest);
+elements.addTimeButton.addEventListener("click", handleAddTime);
 elements.shareButton.addEventListener("click", shareScore);
 elements.aiButton.addEventListener("click", handleAiCaught);
 elements.aiButton.addEventListener("touchstart", handleAiCaught, { passive: false });
+elements.modalPlayAgain.addEventListener("click", () => { hideScoreModal(); handleStartRequest(); });
+elements.modalShare.addEventListener("click", shareScore);
 elements.arena.addEventListener("pointermove", handlePointerMove);
 elements.arena.addEventListener("pointerdown", handlePointerMove);
 elements.arena.addEventListener("touchstart", handleTouchMove, { passive: true });

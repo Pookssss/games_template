@@ -277,7 +277,7 @@ h1 {
   text-transform: uppercase;
   user-select: none;
   cursor: pointer;
-  transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
 }
 
 .ai-button.shake {
@@ -638,5 +638,170 @@ h1 {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Score Modal ─────────────────────────────────────── */
+.score-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  transition: opacity 300ms ease, visibility 300ms ease;
+}
+
+.score-modal.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.score-modal.entering .score-modal-card {
+  transform: translateY(30px) scale(0.94);
+  opacity: 0;
+}
+
+.score-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 8, 18, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.score-modal-card {
+  position: relative;
+  width: min(100%, 440px);
+  padding: 40px 36px 36px;
+  border-radius: 32px;
+  background: linear-gradient(160deg, rgba(10, 28, 50, 0.95) 0%, rgba(6, 17, 34, 0.98) 100%);
+  border: 1px solid rgba(116, 242, 206, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(116, 242, 206, 0.06),
+    0 32px 80px rgba(0, 0, 0, 0.55),
+    0 0 60px rgba(116, 242, 206, 0.06) inset;
+  text-align: center;
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 380ms ease;
+}
+
+/* Ambient glow inside card */
+.modal-glow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(116, 242, 206, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.modal-kicker {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--primary);
+}
+
+.modal-title {
+  margin: 0 0 28px;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(2rem, 6vw, 3rem);
+  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, #ffffff 20%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modal-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.modal-stat {
+  padding: 18px 12px;
+  border-radius: 20px;
+  background: rgba(12, 34, 60, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.modal-stat--accent {
+  background: rgba(116, 242, 206, 0.09);
+  border-color: rgba(116, 242, 206, 0.25);
+}
+
+.modal-stat-label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.modal-stat-value {
+  display: block;
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.modal-stat--accent .modal-stat-value {
+  color: var(--primary);
+}
+
+.modal-new-record {
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 207, 102, 0.18), rgba(255, 153, 102, 0.12));
+  border: 1px solid rgba(255, 207, 102, 0.36);
+  color: var(--warning);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+  animation: record-pulse 1.6s ease infinite;
+}
+
+.modal-new-record.hidden {
+  display: none;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modal-actions .ui-button {
+  flex: 1;
+  min-width: 130px;
+}
+
+@keyframes record-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 207, 102, 0.28); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 207, 102, 0); }
+}
+
+@media (max-width: 700px) {
+  .score-modal-card {
+    padding: 28px 20px 24px;
+    border-radius: 26px;
+  }
+
+  .modal-stats {
+    gap: 8px;
+  }
+
+  .modal-stat {
+    padding: 14px 8px;
+    border-radius: 16px;
   }
 }

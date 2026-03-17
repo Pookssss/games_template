@@ -41,6 +41,7 @@
       <section class="controls" aria-label="Game controls">
         <button id="startButton" class="ui-button primary">Start Game</button>
         <button id="restartButton" class="ui-button secondary" disabled>Restart</button>
+        <button id="addTimeButton" class="ui-button ghost">+5s</button>
         <button id="shareButton" class="ui-button ghost" disabled>Share Score</button>
       </section>
 
@@ -62,6 +63,35 @@
       </section>
     </section>
   </main>
+
+  <!-- Score Modal -->
+  <div id="scoreModal" class="score-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="score-modal-backdrop"></div>
+    <div class="score-modal-card">
+      <div class="modal-glow"></div>
+      <p class="modal-kicker">Run Complete</p>
+      <h2 id="modalTitle" class="modal-title">Game Over</h2>
+      <div class="modal-stats">
+        <div class="modal-stat">
+          <span class="modal-stat-label">Score</span>
+          <strong id="modalScore" class="modal-stat-value">0</strong>
+        </div>
+        <div class="modal-stat modal-stat--accent">
+          <span class="modal-stat-label">Best</span>
+          <strong id="modalBest" class="modal-stat-value">0</strong>
+        </div>
+        <div class="modal-stat">
+          <span class="modal-stat-label">Combo Peak</span>
+          <strong id="modalCombo" class="modal-stat-value">x1</strong>
+        </div>
+      </div>
+      <div id="modalNewRecord" class="modal-new-record hidden">🏆 New Record!</div>
+      <div class="modal-actions">
+        <button id="modalPlayAgain" class="ui-button primary">Play Again</button>
+        <button id="modalShare" class="ui-button ghost">Share Score</button>
+      </div>
+    </div>
+  </div>
 
   <script src="game.js"></script>
 </body>
