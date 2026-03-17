@@ -334,7 +334,9 @@ const GAME = {
   player: { x: W/2, y: H - 150, size: 40, emoji: '🐒' },
   bullets: [],
   enemies: [],
+  drops: [],      // New: collectables (coins/powerups)
   particles: [],
+  powerup: { type: null, time: 0 }, // Active powerup
   stars: [],
   lastShot: 0,
   scoreTexts: []
@@ -390,11 +392,18 @@ function update(dt, time) {
   if (GAME.player.y < 20) GAME.player.y = 20;
   if (GAME.player.y > H - 20) GAME.player.y = H - 20;
 
-  // Auto Shoot
-  const fireInterval = Math.max(0.1, 0.4 - (state.upgrades.spd * 0.02)); // faster fire rate
+  // Auto Shoot (Faster base fire rate)
+  let fireInterval = Math.max(0.08, 0.25 - (state.upgrades.spd * 0.015)); 
+  if (GAME.powerup.type === 'spd' && GAME.powerup.time > 0) fireInterval /= 2;
+
   if (time - GAME.lastShot > fireInterval * 1000) {
     GAME.lastShot = time;
     shoot();
+  }
+
+  if (GAME.powerup.time > 0) {
+    GAME.powerup.time -= dt;
+    if (GAME.powerup.time <= 0) GAME.powerup.type = null;
   }
 
   // Move Bullets
@@ -405,16 +414,16 @@ function update(dt, time) {
     if (b.y < -50) GAME.bullets.splice(i, 1);
   }
 
-  // Spawn Enemies
-  if (Math.random() < 0.03 + (state.upgrades.dmg * 0.001)) { // slightly more enemies as you upgrade
+  // Spawn Enemies (Lower HP)
+  if (Math.random() < 0.03 + (state.upgrades.dmg * 0.001)) { 
     const types = [
-      { e: '🎈', hp: 2 + state.upgrades.dmg * 0.5, v: 80, s: 35 },
-      { e: '☁️', hp: 4 + state.upgrades.dmg * 1.2, v: 50, s: 50 },
-      { e: '🛸', hp: 8 + state.upgrades.dmg * 2.0, v: 120, s: 40 }
+      { e: '🎈', hp: 1 + state.upgrades.dmg * 0.2, v: 80, s: 35 },
+      { e: '☁️', hp: 2 + state.upgrades.dmg * 0.6, v: 50, s: 50 },
+      { e: '🛸', hp: 4 + state.upgrades.dmg * 1.0, v: 120, s: 40 }
     ];
     let type = types[Math.floor(Math.random() * types.length)];
     // Boss chance
-    if (Math.random() < 0.05) { type = { e: '👾', hp: 40 + state.upgrades.dmg * 5, v: 30, s: 80 }; }
+    if (Math.random() < 0.05) { type = { e: '👾', hp: 20 + state.upgrades.dmg * 2, v: 30, s: 80 }; }
 
     GAME.enemies.push({
       x: Math.random() * (W - 60) + 30,
@@ -448,16 +457,76 @@ function update(dt, time) {
 
         if (e.hp <= 0) {
           // Kill
-          let reward = Math.ceil(e.maxHp * 0.5);
-          state.coins += reward;
-          saveGame();
-          spawnScoreText(e.x, e.y, '+' + reward);
+          let val = Math.ceil(e.maxHp * 0.5);
+          // Spawn Drop instead of auto-collect
+          let isPowerup = Math.random() < 0.08; 
+          let pType = null;
+          if (isPowerup) {
+            const pts = ['spd', 'bomb', 'multi'];
+            pType = pts[Math.floor(Math.random() * pts.length)];
+          }
+          GAME.drops.push({
+            x: e.x, y: e.y,
+            type: isPowerup ? 'powerup' : 'banana',
+            val: val,
+            pType: pType,
+            vx: (Math.random() - 0.5) * 100,
+            vy: -100 - Math.random() * 50
+          });
+
           spawnParticles(e.x, e.y, '#74f2ce', 8);
           GAME.enemies.splice(i, 1);
           if (!_muted) playKillSound();
           break; // enemy dead, stop bullet loop
         }
       }
+    }
+  }
+
+  // Move Drops & Collection
+  let px = GAME.player.x;
+  let py = GAME.player.y;
+  for (let i = GAME.drops.length - 1; i >= 0; i--) {
+    let d = GAME.drops[i];
+    d.vy += 400 * dt; // gravity
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+
+    if (d.y > H + 50) { GAME.drops.splice(i, 1); continue; }
+
+    // Magnet effect towards player if close
+    let dx = px - d.x; let dy = py - d.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 150) {
+      d.x += (dx / dist) * 300 * dt;
+      d.y += (dy / dist) * 300 * dt;
+    }
+
+    // Collection test
+    if (dist < 40) {
+      if (d.type === 'banana') {
+        state.coins += d.val;
+        saveGame();
+        spawnScoreText(d.x, d.y, '+' + d.val);
+        if (!_muted) playHitSound();
+      } else if (d.type === 'powerup') {
+        if (d.pType === 'bomb') {
+          spawnScoreText(W/2, H/2, 'BOOM!');
+          GAME.enemies.forEach(en => {
+            spawnParticles(en.x, en.y, '#f53b57', 10);
+            state.coins += Math.ceil(en.maxHp * 0.5);
+          });
+          saveGame();
+          GAME.enemies = [];
+          if (!_muted) playKillSound();
+        } else {
+          GAME.powerup.type = d.pType;
+          GAME.powerup.time = 5.0; // 5 seconds
+          spawnScoreText(d.x, d.y, d.pType.toUpperCase() + '!');
+          if (!_muted) playSoftUpgrade();
+        }
+      }
+      GAME.drops.splice(i, 1);
     }
   }
 
@@ -485,7 +554,9 @@ function update(dt, time) {
 }
 
 function shoot() {
-  const m = state.upgrades.multi; // 0, 1, 2, 3, 4
+  let m = state.upgrades.multi; // 0, 1, 2, 3, 4
+  if (GAME.powerup.type === 'multi') m += 2;
+
   const px = GAME.player.x;
   const py = GAME.player.y - 20;
   
@@ -529,6 +600,21 @@ function draw() {
   // Bullets
   ctx.font = '24px Arial';
   GAME.bullets.forEach(b => { ctx.fillText('🍌', b.x, b.y); });
+
+  // Drops
+  GAME.drops.forEach(d => {
+    if (d.type === 'banana') {
+      ctx.font = '20px Arial';
+      ctx.fillText('🍌', d.x, d.y);
+    } else {
+      ctx.font = '28px Arial';
+      let icon = '🎁';
+      if (d.pType === 'bomb') icon = '💣';
+      else if (d.pType === 'spd') icon = '⚡';
+      else if (d.pType === 'multi') icon = '🌟';
+      ctx.fillText(icon, d.x, d.y);
+    }
+  });
 
   // Enemies
   GAME.enemies.forEach(e => {
