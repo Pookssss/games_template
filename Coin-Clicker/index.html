@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -1476,6 +1476,74 @@
         animation: none !important;
       }
     }
+
+    /* ═══════════════════════════════════════════
+       RELAXING AURA ORBS around coin button
+    ═══════════════════════════════════════════ */
+    .aura-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      animation: orbFloat var(--orb-dur, 6s) ease-in-out var(--orb-delay, 0s) infinite;
+    }
+    @keyframes orbFloat {
+      0%   { opacity: 0;    transform: translate(var(--orb-x0), var(--orb-y0)) scale(0.7); }
+      20%  { opacity: 0.55; }
+      80%  { opacity: 0.42; }
+      100% { opacity: 0;    transform: translate(var(--orb-x1), var(--orb-y1)) scale(1.15); }
+    }
+
+    /* Coin button breathing glow — slower = more relaxing */
+    @keyframes coinPulse {
+      0%,100% { box-shadow: 0 8px 36px rgba(245,166,35,0.38); }
+      50%      { box-shadow: 0 8px 56px rgba(245,166,35,0.66), 0 0 80px rgba(245,166,35,0.2); }
+    }
+    #click-btn { animation: coinPulse 3.2s ease-in-out infinite; }
+
+    /* ═══════════════════════════════════════════
+       IDLE MESSAGE below coin area
+    ═══════════════════════════════════════════ */
+    #idle-msg {
+      font-size: 0.78rem;
+      color: rgba(180, 200, 220, 0.5);
+      text-align: center;
+      min-height: 1.2em;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      transition: opacity 1.2s ease;
+      font-style: italic;
+      pointer-events: none;
+    }
+    #idle-msg.hidden { opacity: 0; }
+
+    /* ═══════════════════════════════════════════
+       MUSIC TOGGLE BUTTON
+    ═══════════════════════════════════════════ */
+    #music-btn {
+      position: fixed;
+      bottom: 18px;
+      right: 14px;
+      z-index: 200;
+      background: rgba(10, 28, 52, 0.82);
+      border: 1px solid rgba(116, 242, 206, 0.22);
+      color: #74f2ce;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+    #music-btn:hover { background: rgba(20, 48, 80, 0.92); border-color: rgba(116,242,206,0.5); transform: scale(1.04); }
+    #music-btn.muted { color: #556; border-color: rgba(255,255,255,0.08); }
   </style>
 </head>
 <body>
@@ -1541,6 +1609,10 @@
 
     <div id="coin-btn-area">
       <div id="coin-frame-ring"></div>
+      <span class="aura-orb" id="aura-1"></span>
+      <span class="aura-orb" id="aura-2"></span>
+      <span class="aura-orb" id="aura-3"></span>
+      <span class="aura-orb" id="aura-4"></span>
       <svg id="progress-ring-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle id="ring-track" cx="50" cy="50" r="46"/>
         <circle id="ring-fill"  cx="50" cy="50" r="46" stroke-dasharray="289" stroke-dashoffset="289"/>
@@ -1556,6 +1628,7 @@
       <div id="mascot-name">Rookie Miner</div>
     </div>
     <div id="per-click-label">Tap the coin!</div>
+    <div id="idle-msg" class="hidden"></div>
 
     <div id="prestige-area">
       <button id="prestige-btn" onclick="doPrestige()">✨ Prestige (resets, +10% bonus)</button>
@@ -1732,6 +1805,9 @@
 
   <!-- Achievement / event toast -->
   <div id="toast"></div>
+
+  <!-- Music toggle -->
+  <button id="music-btn" onclick="toggleMusic()" title="Toggle ambient music">🎵 Music</button>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script>
@@ -3084,6 +3160,228 @@
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     window.requestAnimationFrame(animateSceneRunner);
   }
+  /* ════════════════════════════════════════════════
+     RELAXING ADDITIONS
+     - AmbientMusicEngine  (Web Audio API chord loop)
+     - Softer click SFX
+     - Aura orbs around coin
+     - Idle message rotator
+  ════════════════════════════════════════════════ */
+
+  /* ── Ambient Music Engine ────────────────────── */
+  var _audioCtx = null;
+  var _musicNodes = [];
+  var _musicPlaying = false;
+  var _musicMuted = false;
+
+  // Lo-fi chord progression: Cmaj7 → Gmaj7 → Am7 → Fmaj7
+  // Each chord = array of Hz frequencies
+  var CHORD_PROGRESSION = [
+    [261.63, 329.63, 392.00, 493.88],  // Cmaj7
+    [392.00, 493.88, 587.33, 739.99],  // Gmaj7 (G3 B3 D4 F#4)
+    [220.00, 261.63, 329.63, 392.00],  // Am7
+    [174.61, 220.00, 261.63, 329.63],  // Fmaj7
+  ];
+  var CHORD_DUR = 3.2;     // seconds per chord
+  var _chordIdx = 0;
+  var _chordTimer = null;
+
+  function _getAudioCtx() {
+    if (!_audioCtx) {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      _audioCtx = new Ctx();
+    }
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    return _audioCtx;
+  }
+
+  function _playChord(freqs, ctx, masterGain, when, dur) {
+    var nodes = [];
+    freqs.forEach(function(freq) {
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, when);
+
+      // Soft fade envelope
+      gain.gain.setValueAtTime(0, when);
+      gain.gain.linearRampToValueAtTime(0.018, when + 0.6);
+      gain.gain.linearRampToValueAtTime(0.014, when + dur - 0.8);
+      gain.gain.linearRampToValueAtTime(0, when + dur);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(when);
+      osc.stop(when + dur);
+      nodes.push(osc, gain);
+    });
+    return nodes;
+  }
+
+  function _scheduleNextChord() {
+    if (_musicMuted || !_musicPlaying) return;
+    var ctx = _getAudioCtx();
+    if (!ctx) return;
+
+    // Master gain for overall music volume
+    if (!_audioCtx._masterGain) {
+      _audioCtx._masterGain = ctx.createGain();
+      _audioCtx._masterGain.gain.value = 0.55;
+      _audioCtx._masterGain.connect(ctx.destination);
+    }
+
+    var freqs = CHORD_PROGRESSION[_chordIdx % CHORD_PROGRESSION.length];
+    _chordIdx++;
+    var when = ctx.currentTime + 0.05;
+    _playChord(freqs, ctx, _audioCtx._masterGain, when, CHORD_DUR);
+
+    _chordTimer = setTimeout(_scheduleNextChord, CHORD_DUR * 1000 - 200);
+  }
+
+  function startAmbientMusic() {
+    if (_musicPlaying) return;
+    _musicPlaying = true;
+    _musicMuted = false;
+    _scheduleNextChord();
+    var btn = document.getElementById('music-btn');
+    if (btn) { btn.textContent = '🎵 Music'; btn.classList.remove('muted'); }
+  }
+
+  function stopAmbientMusic() {
+    _musicPlaying = false;
+    _musicMuted = true;
+    clearTimeout(_chordTimer);
+    if (_audioCtx && _audioCtx._masterGain) {
+      _audioCtx._masterGain.gain.setTargetAtTime(0, _audioCtx.currentTime, 0.4);
+      setTimeout(function() {
+        if (_audioCtx._masterGain) _audioCtx._masterGain.gain.value = 0.55;
+      }, 1800);
+    }
+    var btn = document.getElementById('music-btn');
+    if (btn) { btn.textContent = '🔇 Music'; btn.classList.add('muted'); }
+  }
+
+  function toggleMusic() {
+    if (_musicPlaying) {
+      stopAmbientMusic();
+    } else {
+      startAmbientMusic();
+    }
+  }
+
+  /* ── Softer Click SFX ──────────────────────────── */
+  function playSoftClick() {
+    var ctx = _getAudioCtx();
+    if (!ctx) return;
+    var osc  = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var t    = ctx.currentTime;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(540, t);
+    osc.frequency.exponentialRampToValueAtTime(320, t + 0.08);
+    gain.gain.setValueAtTime(0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.14);
+  }
+
+  function playSoftUpgrade() {
+    var ctx = _getAudioCtx();
+    if (!ctx) return;
+    var notes = [523.25, 659.25, 783.99];
+    notes.forEach(function(freq, i) {
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      var t    = ctx.currentTime + i * 0.09;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.05, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.22);
+    });
+  }
+
+  // Hook soft SFX into existing click handler
+  var _origHandleClick = typeof handleClick === 'function' ? handleClick : null;
+  if (_origHandleClick) {
+    handleClick = function(x, y) {
+      if (!_musicMuted) playSoftClick();
+      _origHandleClick(x, y);
+    };
+  }
+
+  // Hook upgrade SFX into buyUpgrade
+  var _origBuyUpgrade = buyUpgrade;
+  buyUpgrade = function(id) {
+    _origBuyUpgrade(id);
+    if (!_musicMuted) playSoftUpgrade();
+  };
+
+  /* ── Aura Orbs Setup ───────────────────────────── */
+  (function initAuraOrbs() {
+    var orbs = [
+      { id: 'aura-1', size: 28, color: 'rgba(245,197,24,0.22)', dur: 7.2, delay: 0,   x0: '0px',   y0: '-30px', x1: '36px',  y1: '-80px'  },
+      { id: 'aura-2', size: 20, color: 'rgba(116,242,206,0.2)', dur: 8.4, delay: 1.8, x0: '20px',  y0: '20px',  x1: '-40px', y1: '-60px'  },
+      { id: 'aura-3', size: 16, color: 'rgba(180,140,255,0.2)', dur: 6.0, delay: 3.2, x0: '-24px', y0: '-10px', x1: '20px',  y1: '-70px'  },
+      { id: 'aura-4', size: 24, color: 'rgba(255,180,80,0.18)', dur: 9.1, delay: 0.8, x0: '30px',  y0: '10px',  x1: '-28px', y1: '-90px'  },
+    ];
+    orbs.forEach(function(o) {
+      var el = document.getElementById(o.id);
+      if (!el) return;
+      el.style.width  = o.size + 'px';
+      el.style.height = o.size + 'px';
+      el.style.background = o.color;
+      el.style.filter = 'blur(' + Math.round(o.size * 0.4) + 'px)';
+      el.style.left = '50%';
+      el.style.top  = '50%';
+      el.style.marginLeft = '-' + (o.size / 2) + 'px';
+      el.style.marginTop  = '-' + (o.size / 2) + 'px';
+      el.style.setProperty('--orb-dur',   o.dur + 's');
+      el.style.setProperty('--orb-delay', o.delay + 's');
+      el.style.setProperty('--orb-x0', o.x0);
+      el.style.setProperty('--orb-y0', o.y0);
+      el.style.setProperty('--orb-x1', o.x1);
+      el.style.setProperty('--orb-y1', o.y1);
+    });
+  })();
+
+  /* ── Idle Messages ─────────────────────────────── */
+  var IDLE_MSGS = [
+    '☁️ เหรียญยังคงไหลมาเรื่อยๆ...',
+    '🌙 ผ่อนคลายได้เลย ทุกอย่างดำเนินไป',
+    '🌿 ลมพัดเบาๆ เหรียญก็ยังมา',
+    '⭐ แค่นั่งเฉยๆ เหรียญไม่หนีไปไหน',
+    '🫧 ฟองน้ำลอยแล้ว เหรียญก็ลอยตาม',
+    '🍃 เสียงลม เสียงเหรียญ สบายๆ',
+    '🌊 เหมือนคลื่นทะเล เงียบๆ แต่มาไม่หยุด',
+    '💤 แม้หลับตา ก็ยังได้เหรียญ',
+  ];
+  var _idleMsgIdx = 0;
+  var _lastActivity = Date.now();
+  var IDLE_THRESHOLD_MS = 20000;  // 20 วินาที
+
+  // Track last activity
+  document.addEventListener('pointerdown', function() { _lastActivity = Date.now(); });
+
+  setInterval(function() {
+    var el = document.getElementById('idle-msg');
+    if (!el) return;
+    var idle = Date.now() - _lastActivity > IDLE_THRESHOLD_MS;
+    if (idle) {
+      el.textContent = IDLE_MSGS[_idleMsgIdx % IDLE_MSGS.length];
+      _idleMsgIdx++;
+      el.classList.remove('hidden');
+    } else {
+      el.classList.add('hidden');
+    }
+  }, 8000);
+
   </script>
 </body>
 </html>

@@ -1,287 +1,288 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Clicker Games</title>
-  <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Games — เล่นง่าย สบายๆ</title>
+    <style>
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0f0f1a;
-      color: #eee;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 48px 20px 60px;
-    }
+      body {
+        font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+        background: #0c0f1a;
+        color: #e0e6f0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 52px 20px 72px;
+      }
 
-    /* ── Header ─────────────────────────────── */
-    .site-title {
-      font-size: 2.4rem;
-      font-weight: 800;
-      letter-spacing: 3px;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #f5c518, #ff6b35, #ff6cf5);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+      /* ── Ambient background blobs ─── */
+      body::before, body::after {
+        content: "";
+        position: fixed;
+        border-radius: 50%;
+        pointer-events: none;
+        filter: blur(80px);
+        opacity: 0.18;
+        z-index: 0;
+      }
+      body::before {
+        width: 480px; height: 480px;
+        top: -120px; right: -100px;
+        background: #5b8dee;
+      }
+      body::after {
+        width: 360px; height: 360px;
+        bottom: -80px; left: -80px;
+        background: #74f2ce;
+      }
 
-    .site-sub {
-      font-size: 1rem;
-      color: #555;
-      margin-bottom: 52px;
-      letter-spacing: 1px;
-    }
+      /* ── Header ───────────────────── */
+      .header {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        margin-bottom: 56px;
+      }
 
-    /* ── Grid ───────────────────────────────── */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 28px;
-      width: 100%;
-      max-width: 960px;
-    }
+      .badge {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #8ba4c0;
+        margin-bottom: 18px;
+      }
 
-    /* ── Card ───────────────────────────────── */
-    .card {
-      border-radius: 18px;
-      padding: 32px 24px 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.18s, box-shadow 0.18s;
-      cursor: pointer;
-    }
+      .site-title {
+        font-size: clamp(2rem, 6vw, 3.2rem);
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        line-height: 1.1;
+        background: linear-gradient(135deg, #ffffff 0%, #b8d4ff 50%, #74f2ce 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 14px;
+      }
 
-    .card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0.08;
-      transition: opacity 0.18s;
-    }
+      .site-sub {
+        font-size: 1rem;
+        color: #6a7f99;
+        max-width: 38ch;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
 
-    .card:hover { transform: translateY(-6px); }
-    .card:hover::before { opacity: 0.14; }
+      /* ── Grid ─────────────────────── */
+      .grid {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+        width: 100%;
+        max-width: 880px;
+      }
 
-    /* Coin */
-    .card-coin {
-      background: #16132a;
-      border: 1px solid #3a3020;
-      box-shadow: 0 4px 24px rgba(245,197,24,0.15);
-    }
-    .card-coin:hover { box-shadow: 0 12px 40px rgba(245,197,24,0.35); }
-    .card-coin::before { background: #f5c518; }
+      /* ── Card ─────────────────────── */
+      .card {
+        border-radius: 22px;
+        padding: 32px 26px 28px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(255,255,255,0.07);
+      }
 
-    /* Coffee */
-    .card-coffee {
-      background: #1c1008;
-      border: 1px solid #3a2010;
-      box-shadow: 0 4px 24px rgba(200,120,40,0.15);
-    }
-    .card-coffee:hover { box-shadow: 0 12px 40px rgba(200,120,40,0.35); }
-    .card-coffee::before { background: #d4883a; }
+      /* Glow overlay */
+      .card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: var(--card-glow, rgba(255,255,255,0));
+        opacity: 0;
+        transition: opacity 0.22s ease;
+        pointer-events: none;
+      }
+      .card:hover { transform: translateY(-5px); }
+      .card:hover::after { opacity: 1; }
 
-    /* Programmer */
-    .card-programmer {
-      background: #0d1117;
-      border: 1px solid #21362d;
-      box-shadow: 0 4px 24px rgba(57,211,83,0.12);
-    }
-    .card-programmer:hover { box-shadow: 0 12px 40px rgba(57,211,83,0.3); }
-    .card-programmer::before { background: #39d353; }
+      /* ── Card: Coin ────────────────── */
+      .card-coin {
+        background: linear-gradient(145deg, #1a1630 0%, #14112a 100%);
+        box-shadow: 0 6px 28px rgba(245,197,24,0.12);
+        --card-glow: radial-gradient(circle at 50% 0%, rgba(245,197,24,0.08), transparent 60%);
+      }
+      .card-coin:hover { box-shadow: 0 14px 44px rgba(245,197,24,0.28); }
 
-    /* Pizza */
-    .card-pizza {
-      background: #1a0a00;
-      border: 1px solid #4a2010;
-      box-shadow: 0 4px 24px rgba(255,107,53,0.15);
-    }
-    .card-pizza:hover { box-shadow: 0 12px 40px rgba(255,107,53,0.35); }
-    .card-pizza::before { background: #ff6b35; }
+      /* ── Card: Avoid The AI ────────── */
+      .card-ai {
+        background: linear-gradient(145deg, #071c2e 0%, #051524 100%);
+        box-shadow: 0 6px 28px rgba(116,242,206,0.13);
+        --card-glow: radial-gradient(circle at 50% 0%, rgba(116,242,206,0.09), transparent 60%);
+      }
+      .card-ai:hover { box-shadow: 0 14px 44px rgba(116,242,206,0.28); }
 
-    /* Avoid The AI */
-    .card-ai {
-      background: #081827;
-      border: 1px solid #1f4d63;
-      box-shadow: 0 4px 24px rgba(116,242,206,0.18);
-    }
-    .card-ai:hover { box-shadow: 0 12px 40px rgba(116,242,206,0.34); }
-    .card-ai::before { background: #74f2ce; }
+      /* ── Icon ─────────────────────── */
+      .card-icon {
+        font-size: 3rem;
+        line-height: 1;
+        margin-bottom: 4px;
+        animation: float 3.4s ease-in-out infinite;
+      }
+      .card:nth-child(2) .card-icon { animation-delay: 0.7s; }
 
-    /* Card icon */
-    .card-icon {
-      font-size: 4rem;
-      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
-      animation: iconFloat 3s ease-in-out infinite;
-    }
-    .card:nth-child(2) .card-icon { animation-delay: 0.4s; }
-    .card:nth-child(3) .card-icon { animation-delay: 0.8s; }
-    .card:nth-child(4) .card-icon { animation-delay: 1.2s; }
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-9px); }
+      }
 
-    @keyframes iconFloat {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-8px); }
-    }
+      /* ── Card text ────────────────── */
+      .card-name {
+        font-size: 1.22rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .card-coin .card-name { color: #f5c518; }
+      .card-ai   .card-name { color: #74f2ce; }
 
-    .card-name {
-      font-size: 1.3rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-    .card-coin     .card-name { color: #f5c518; }
-    .card-coffee   .card-name { color: #d4883a; }
-    .card-programmer .card-name { color: #39d353; }
-    .card-pizza    .card-name { color: #ff6b35; }
-    .card-ai       .card-name { color: #74f2ce; }
+      .card-hook {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        padding: 3px 10px;
+        border-radius: 999px;
+        margin-bottom: 2px;
+      }
+      .card-coin .card-hook { background: rgba(245,197,24,0.1); color: #f5c518; }
+      .card-ai   .card-hook { background: rgba(116,242,206,0.1); color: #74f2ce; }
 
-    .card-desc {
-      font-size: 0.85rem;
-      color: #666;
-      text-align: center;
-      line-height: 1.5;
-    }
+      .card-desc {
+        font-size: 0.87rem;
+        color: #5e7489;
+        line-height: 1.65;
+        flex: 1;
+      }
 
-    .card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 6px;
-      margin-top: 4px;
-    }
+      /* ── Tags ─────────────────────── */
+      .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+      }
 
-    .tag {
-      font-size: 0.72rem;
-      border-radius: 12px;
-      padding: 3px 10px;
-      border: 1px solid;
-    }
-    .card-coin       .tag { color: #f5c518; border-color: #3a3020; background: #1e1a0a; }
-    .card-coffee     .tag { color: #d4883a; border-color: #3a2010; background: #1a0e05; }
-    .card-programmer .tag { color: #39d353; border-color: #21362d; background: #0a1f0a; }
-    .card-pizza      .tag { color: #ff6b35; border-color: #4a2010; background: #1a0800; }
-    .card-ai         .tag { color: #74f2ce; border-color: #1f4d63; background: #081a22; }
+      .tag {
+        font-size: 0.71rem;
+        border-radius: 10px;
+        padding: 3px 10px;
+        border: 1px solid;
+        font-weight: 500;
+      }
+      .card-coin .tag { color: #c9a010; border-color: #3a3020; background: #1a1508; }
+      .card-ai   .tag { color: #4fb89a; border-color: #1a4455; background: #061620; }
 
-    .play-btn {
-      margin-top: 8px;
-      padding: 10px 32px;
-      border: none;
-      border-radius: 24px;
-      font-size: 0.92rem;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: 1px;
-      transition: transform 0.1s, filter 0.1s;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .play-btn:hover { transform: scale(1.06); filter: brightness(1.15); }
+      /* ── Play button ──────────────── */
+      .play-btn {
+        align-self: stretch;
+        margin-top: 10px;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 14px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        cursor: pointer;
+        letter-spacing: 0.05em;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: filter 0.15s, transform 0.15s;
+      }
+      .play-btn:hover { filter: brightness(1.12); transform: scale(1.02); }
+      .card-coin .play-btn { background: #f5c518; color: #1a1208; }
+      .card-ai   .play-btn { background: #74f2ce; color: #04141e; }
 
-    .card-coin       .play-btn { background: #f5c518; color: #1a1208; }
-    .card-coffee     .play-btn { background: #d4883a; color: #1a0800; }
-    .card-programmer .play-btn { background: #39d353; color: #051005; }
-    .card-pizza      .play-btn { background: #ff6b35; color: #1a0400; }
-    .card-ai         .play-btn { background: #74f2ce; color: #04141e; }
+      /* ── Footer ───────────────────── */
+      footer {
+        position: relative;
+        z-index: 1;
+        margin-top: 60px;
+        font-size: 0.78rem;
+        color: #2e3d50;
+        letter-spacing: 0.06em;
+        text-align: center;
+      }
+      footer span { margin: 0 8px; }
 
-    /* ── Footer ─────────────────────────────── */
-    footer {
-      margin-top: 56px;
-      font-size: 0.78rem;
-      color: #333;
-      letter-spacing: 1px;
-    }
+      @media (max-width: 500px) {
+        body { padding: 36px 16px 56px; }
+        .header { margin-bottom: 36px; }
+        .card { padding: 24px 20px 22px; }
+        .card-icon { font-size: 2.4rem; }
+      }
+    </style>
+  </head>
+  <body>
 
-    @media (max-width: 480px) {
-      .site-title { font-size: 1.7rem; }
-      .card { padding: 24px 18px 22px; }
-      .card-icon { font-size: 3rem; }
-      .card-name { font-size: 1.1rem; }
-    }
-  </style>
-</head>
-<body>
+    <header class="header">
+      <div class="badge">🎮 Browser Mini Games</div>
+      <h1 class="site-title">เล่นง่าย<br>สบายๆ ทุกเวลา</h1>
+      <p class="site-sub">เปิดทันที ไม่ต้องติดตั้ง ไม่ต้องสมัครสมาชิก<br>เก็บคะแนนสูงสุดไว้ในเบราว์เซอร์ของคุณ</p>
+    </header>
 
-  <div class="site-title">🎮 Clicker Games</div>
-  <div class="site-sub">Choose a game and start clicking!</div>
+    <div class="grid">
 
-  <div class="grid">
+      <!-- Coin Clicker -->
+      <a class="card card-coin" href="Coin-Clicker/index.html">
+        <div class="card-icon">🪙</div>
+        <div class="card-hook">Idle · Clicker</div>
+        <div class="card-name">Coin Clicker</div>
+        <p class="card-desc">คลิกสะสมเหรียญ อัปเกรดตัวช่วย แล้ว Prestige เพื่อรับโบนัสพิเศษ — เหมาะสำหรับเปิดค้างไว้ขณะทำอย่างอื่น</p>
+        <div class="card-tags">
+          <span class="tag">🪙 Idle</span>
+          <span class="tag">Upgrade</span>
+          <span class="tag">Prestige</span>
+        </div>
+        <span class="play-btn">▶ เล่นเลย</span>
+      </a>
 
-    <!-- Coin Clicker -->
-    <div class="card card-coin" onclick="location.href='Coin-Clicker/index.html'">
-      <div class="card-icon">🪙</div>
-      <div class="card-name">Coin Clicker</div>
-      <div class="card-desc">The original. Click coins, buy upgrades, prestige for bonuses.</div>
-      <div class="card-tags">
-        <span class="tag">Coins</span>
-        <span class="tag">Classic</span>
-        <span class="tag">Prestige</span>
-      </div>
-      <a class="play-btn" href="Coin-Clicker/index.html">▶ Play</a>
+      <!-- Avoid The AI -->
+      <a class="card card-ai" href="avoid-the-ai/index.html">
+        <div class="card-icon">🤖</div>
+        <div class="card-hook">Reaction · Arcade</div>
+        <div class="card-name">Avoid The AI</div>
+        <p class="card-desc">AI วิ่งหนีคุณตลอดเวลา — แตะให้ได้มากที่สุดภายใน 10 วินาที ยิ่งคะแนนสูง AI ยิ่งฉลาดและเร็วขึ้น</p>
+        <div class="card-tags">
+          <span class="tag">⚡ Reaction</span>
+          <span class="tag">10 วินาที</span>
+          <span class="tag">Combo</span>
+        </div>
+        <span class="play-btn">▶ เล่นเลย</span>
+      </a>
+
     </div>
 
-    <!-- Avoid The AI -->
-    <div class="card card-ai" onclick="location.href='avoid-the-ai/index.html'">
-      <div class="card-icon">🤖</div>
-      <div class="card-name">Avoid The AI</div>
-      <div class="card-desc">A fast reaction game where the AI dodges your cursor and fights to stay unclicked.</div>
-      <div class="card-tags">
-        <span class="tag">Reaction</span>
-        <span class="tag">Arcade</span>
-        <span class="tag">10 Seconds</span>
-      </div>
-      <a class="play-btn" href="avoid-the-ai/index.html">▶ Play</a>
-    </div>
+    <footer>
+      <span>เล่นได้ทุกอุปกรณ์</span>·
+      <span>ไม่ต้องเชื่อมต่อ Server</span>·
+      <span>บันทึกคะแนนในเบราว์เซอร์</span>
+    </footer>
 
-    <!-- Coffee Clicker -->
-    <!-- <div class="card card-coffee" onclick="location.href='Coffee-Clicker/index.html'">
-      <div class="card-icon">☕</div>
-      <div class="card-name">Coffee Clicker</div>
-      <div class="card-desc">Brew cups, upgrade your espresso machine, and re-roast for extra yield.</div>
-      <div class="card-tags">
-        <span class="tag">Cups</span>
-        <span class="tag">Warm</span>
-        <span class="tag">Re-roast</span>
-      </div>
-      <a class="play-btn" href="Coffee-Clicker/index.html">▶ Play</a>
-    </div> -->
-
-    <!-- Programmer Clicker -->
-    <!-- <div class="card card-programmer" onclick="location.href='Programmer-Clicker/index.html'">
-      <div class="card-icon">💻</div>
-      <div class="card-name">Programmer Clicker</div>
-      <div class="card-desc">Write lines of code, set up CI/CD pipelines, and deploy to prod for bonuses.</div>
-      <div class="card-tags">
-        <span class="tag">Lines</span>
-        <span class="tag">Hacker</span>
-        <span class="tag">Deploy</span>
-      </div>
-      <a class="play-btn" href="Programmer-Clicker/index.html">▶ Play</a>
-    </div> -->
-
-    <!-- Pizza Clicker -->
-    <!-- <div class="card card-pizza" onclick="location.href='Pizza-Clicker/index.html'">
-      <div class="card-icon">🍕</div>
-      <div class="card-name">Pizza Clicker</div>
-      <div class="card-desc">Bake slices, fire up pizza ovens, and discover new recipes for bigger batches.</div>
-      <div class="card-tags">
-        <span class="tag">Slices</span>
-        <span class="tag">Tasty</span>
-        <span class="tag">New Recipe</span>
-      </div>
-      <a class="play-btn" href="Pizza-Clicker/index.html">▶ Play</a>
-    </div> -->
-
-  </div>
-
-  <footer>All games run in your browser · No server needed · Progress saved locally</footer>
-
-</body>
+  </body>
 </html>
