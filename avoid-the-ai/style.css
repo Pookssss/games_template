@@ -305,19 +305,18 @@ h1 {
 }
 
 .status-toast {
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  z-index: 4;
-  max-width: calc(100% - 32px);
-  padding: 10px 14px;
+  display: block;
+  margin: 10px auto 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 7px 16px;
   border-radius: 999px;
-  background: rgba(6, 17, 32, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 17, 32, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   text-align: center;
+  letter-spacing: 0.01em;
 }
 
 .overlay {
@@ -624,9 +623,9 @@ h1 {
   }
 
   body.mobile-gameplay .status-toast {
-    bottom: 12px;
-    padding: 8px 12px;
-    font-size: 0.82rem;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    margin-top: 6px;
   }
 }
 
